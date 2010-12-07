@@ -46,7 +46,7 @@
  */
 void nokia_init( void )
 {
-    uint8_t usart_num = USART2;
+    uint8 usart_num = USART2;
 
     /* Code based loosely on libmaple's usart.[ch] module.  Makes use of some of 
      * the device definition structures defined there.
@@ -60,9 +60,6 @@ void nokia_init( void )
     rcc_clk_enable(usart_dev_table[usart_num].rcc_dev_num);
     nvic_irq_enable(usart_dev_table[usart_num].nvic_dev_num);
 
-    /* usart1 is mad fast  */
-    clk_speed = (usart_num == USART1) ? 72000000UL : 36000000UL;
-    
     /* Configure the pins appropriately  */
     gpio_set_mode(pins->gpio_port, pins->tx_pin, GPIO_MODE_AF_OUTPUT_PP);
     gpio_set_mode(pins->gpio_port, pins->rx_pin, GPIO_MODE_INPUT_FLOATING);

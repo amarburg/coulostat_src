@@ -7,6 +7,8 @@
 
 #include "wirish.h"
 
+#include "nokia6100.h"
+
 #define LED_PIN 13
 #define PWM_PIN  2
 
@@ -58,6 +60,8 @@ void setup() {
     COMM.println("------------------------------------------------------------");
     COMM.print("> ");
 
+    nokia_init();
+    nokia_reset();
 }
 
 void loop() {
