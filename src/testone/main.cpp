@@ -70,6 +70,7 @@ void loop() {
         COMM.println(input);
         switch(input) {
             case 13:  // Carriage Return
+                COMM.println("what?");
                 break;
             case 32:  // ' '
                 COMM.println("spacebar, nice!");
