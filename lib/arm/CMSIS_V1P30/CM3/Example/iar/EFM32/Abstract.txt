@@ -1,0 +1,10 @@
+This example project uses CMSIS and demonstrates 
+the use of Systick in interrupt driven mode
+
+Board:  Energy Micro EFM32-Gxxx-DK Development Kit
+Device: EFM32GxxxF128
+
+-- CMSIS ---------------------------------------------
+SystemInit       called from startup_LPC17xx.s
+SystemCoreClock  is 32000000Hz
+SysTick          runs in interrupt mode
