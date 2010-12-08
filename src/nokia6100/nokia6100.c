@@ -30,6 +30,10 @@
 #include "rcc.h"
 #include "nvic.h"
 #include "usart.h"
+#include "timers.h"
+
+/* header files from wirish */
+#include "time.h"
 
 #include "nokia6100.h"
 
@@ -40,6 +44,9 @@
 #define USART_RE       BIT(2)
 #define USART_RXNEIE   BIT(5)  // read data register not empty interrupt enable
 #define USART_TC       BIT(6)
+
+/* In control register2 (USART_CR2) */
+#define USART_CLKEN    BIT(11)
 
 /**
  * @brief Initialize USART2 for Nokia communications 
@@ -57,7 +64,7 @@ void nokia_init( void )
 
     port = usart_dev_table[usart_num].base;
     pins = usart_dev_table[usart_num].pins;
-    rcc_clk_enable(usart_dev_table[usart_num].rcc_dev_num);
+    rcc_clk_enable(((uint32)usart_dev_table[usart_num].rcc_dev_num));
     nvic_irq_enable(usart_dev_table[usart_num].nvic_dev_num);
 
     /* Configure the pins appropriately  */
@@ -71,15 +78,13 @@ void nokia_init( void )
     if ((usart_num == USART1) ||
         (usart_num == USART2)) {
       /* turn off any pwm if there's a conflict on this usart */
-      timer_set_mode(pin->timer_num, pin->compare_num, TIMER_DISABLED);
+      timer_set_mode(pins->timer_num, pins->compare_num, TIMER_DISABLED);
     }
 
     /* set clock rate to 6MHz */
     port->BRR = 36000000L/6000000L; //APB1 bus max speed is 36MHz
     port->CR1 |= (USART_RE | USART_TE | USART_M); // RX, TX enable, 9-bit
-    port->CR2 |= USART2_CR2_CLKEN; //enable SCK pin CPOL and CPHA are also in this register
-
-
+    port->CR2 |= USART_CLKEN; //enable SCK pin CPOL and CPHA are also in this register
 
     port->CR1 |= USART_UE; // USART enable
 }
@@ -88,12 +93,10 @@ void nokia_init( void )
  * @brief Reset the LCD screen
  */
 void nokia_reset( void ) {
-  uint8_t usart_num = USART2;
   gpio_write_bit( NOKIA_GPIO, NOKIA_RESET, 0 );
   delay( 20000 );
   gpio_write_bit( NOKIA_GPIO, NOKIA_RESET, 1 );
   delay( 20000 );
-
 }
 
 

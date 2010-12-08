@@ -45,10 +45,10 @@ extern "C"{
 #define NOKIA_GPIO          GPIOC_BASE
 
 /* LCD reset (active low) is on PC7 */
-#define NOKIA_RESET         BIT(7)
+#define NOKIA_RESET         7
 
 /* LCD chip select (active low) is on PC8 */
-#define NOKIA_CS            BIT(8)
+#define NOKIA_CS            8
 
 
 /**

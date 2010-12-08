@@ -1,10 +1,10 @@
 PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o
 
 $(BUILD_PATH)/nokia6100.o: nokia6100.c
-	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES) -o $@ -c $< 
-
+	$(SILENT_CC) $(CC) $(CFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+	
 # main project target
-$(BUILD_PATH)/main.o: main.cpp
+$(BUILD_PATH)/main.o: main.cpp 
 	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES) -o $@ -c $< 
 
 $(BUILD_PATH)/libmaple.a: $(BUILDDIRS) $(TGT_BIN)
@@ -15,8 +15,8 @@ library: $(BUILD_PATH)/libmaple.a
 
 .PHONY: library
 
-$(BUILD_PATH)/$(BOARD).elf: $(BUILDDIRS) $(TGT_BIN) $(BUILD_PATH)/main.o $(PROJECT_OBJS)
-	$(SILENT_LD) $(CXX) $(LDFLAGS) -o $@ $(TGT_BIN) $(BUILD_PATH)/main.o
+$(BUILD_PATH)/$(BOARD).elf: $(BUILDDIRS) $(TGT_BIN) $(BUILD_PATH)/main.o $(PROJECT_OBJS) 
+	$(SILENT_LD) $(CXX) $(LDFLAGS) -o $@ $(TGT_BIN) $(PROJECT_OBJS) $(BUILD_PATH)/main.o 
 
 $(BUILD_PATH)/$(BOARD).bin: $(BUILD_PATH)/$(BOARD).elf
 	$(SILENT_OBJCOPY) $(OBJCOPY) -v -Obinary $(BUILD_PATH)/$(BOARD).elf $@ 1>/dev/null
