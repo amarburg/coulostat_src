@@ -37,11 +37,13 @@
 #ifndef _NOKIA_6100_H_
 #define _NOKIA_6100_H_
 
+#include "libmaple_types.h"
 
 #ifdef __cplusplus
 extern "C"{
 #endif
 
+#define NOKIA_USART         USART2
 #define NOKIA_GPIO          GPIOC_BASE
 
 /* LCD reset (active low) is on PC7 */
@@ -50,17 +52,16 @@ extern "C"{
 /* LCD chip select (active low) is on PC8 */
 #define NOKIA_CS            8
 
-
-/**
- * @brief Initialize USART2 for Nokia communications 
- */
 void nokia_init( void );
-
-
-/** 
- * @brief Reset the LCD screen
- */
 void nokia_reset( void );
+
+/* Define function "aliases" for rough compatibility with Lynch's code */
+#define LcdReset        nokia_reset
+#define WriteSpiCommand nokia_write_spi_command
+#define WriteSpiData    nokia_write_spi_data
+
+void nokia_write_spi_command( uint32 ); 
+void nokia_write_spi_data( uint32 ); 
 
 #ifdef __cplusplus
 } // extern "C"

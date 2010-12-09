@@ -1,6 +1,9 @@
-PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o
+PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o \
+	       $(BUILD_PATH)/s1d15g00.o
 
-$(BUILD_PATH)/nokia6100.o: nokia6100.c
+# I believe this overrides a maple-provided rule
+# 
+$(BUILD_PATH)/%.o: %.c
 	$(SILENT_CC) $(CC) $(CFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
 	
 # main project target

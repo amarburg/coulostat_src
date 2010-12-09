@@ -8,6 +8,7 @@
 #include "wirish.h"
 
 #include "nokia6100.h"
+#include "s1d15g00.h"
 
 #define LED_PIN 13
 #define PWM_PIN  2
@@ -41,8 +42,8 @@ void setup() {
     pinMode(LED_PIN, OUTPUT);
 
     /* Start up the serial ports */
-    Serial1.begin(9600);
-    Serial2.begin(9600);
+    Serial1.begin(115200);
+    Serial1.println("Test test");
     Serial3.begin(9600);
 
     /* Send a message out over COMM interface */
@@ -62,11 +63,21 @@ void setup() {
 
     nokia_init();
     nokia_reset();
+
+    InitLcd();
 }
 
 void loop() {
+  static uint8 addr = 0;
     toggle ^= 1;
     digitalWrite(LED_PIN, toggle);
+
+
+    LCDSetPixel( 20,addr, RED ); 
+    addr++;
+    if( addr > 131 ) { addr = 0; }
+
+
     delay(100);
 
     while(COMM.available()) {
@@ -88,7 +99,6 @@ void loop() {
                 break;
             case 119: // 'w'
                 Serial1.println("Hello World!");
-                Serial2.println("Hello World!");
                 Serial3.println("Hello World!");
                 break;
             case 109: // 'm'
@@ -147,7 +157,6 @@ void loop() {
             case 46:  // '.'
                 while(!COMM.available()) {
                     Serial1.print(".");
-                    Serial2.print(".");
                     Serial3.print(".");
                     SerialUSB.print(".");
                 }
@@ -192,7 +201,6 @@ void loop() {
             case 87:  // 'W'
                 while(!COMM.available()) {
                     Serial1.print(DUMMY_DAT);
-                    Serial2.print(DUMMY_DAT);
                     Serial3.print(DUMMY_DAT);
                 }
                 break;
@@ -329,7 +337,6 @@ void loop() {
                 timer_init(2, 1);
                 timer_init(3, 1);
                 timer_init(4, 1);
-                Serial2.begin(9600);
                 COMM.println("(reset serial port)");
                 break;
             case 100:  // 'd'
