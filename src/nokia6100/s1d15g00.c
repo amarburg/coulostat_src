@@ -156,16 +156,6 @@ const unsigned char FONT6x8[97][8];
 const unsigned char FONT8x8[97][8]; 
 const unsigned char FONT8x16[97][16]; 
 
-void InitLcd(void); 
-void LCDWrite130x130bmp( unsigned char * image );  
-void LCDClearScreen(void); 
-void LCDSetPixel(int x, int y, int color); 
-void LCDSetLine(int x1, int y1, int x2, int y2, int color); 
-void LCDSetRect(int x0, int y0, int x1, int y1, unsigned char fill, int color); 
-void LCDSetCircle(int x0, int y0, int radius, int color); 
-void LCDPutChar(char c, int x, int y, int size, int fcolor, int bcolor); 
-void LCDPutStr(char *pString, int x, int y, int Size, int fColor, int bColor); 
-
 /* Lynch's Blacklight() function removed here */
 
 // ***************************************************************************** 
@@ -216,7 +206,7 @@ void InitLcd(void)
   WriteSpiData(3); // P2 = 3 resistance ratio (only value that works) 
  
   // allow power supply to stabilize 
-  Delay(100); 
+  Delay(1000); 
  
   // turn on the display 
   WriteSpiCommand(DISON); 
@@ -775,7 +765,7 @@ void LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
 // 
 // Author: James P Lynch August 30, 2007 
 // ************************************************************************************************* 
-void LCDPutStr(char *pString, int x, int y, int Size, int fColor, int bColor)  
+void LCDPutStr(const char *pString, int x, int y, int Size, int fColor, int bColor)  
 { 
   // loop until null-terminator is seen 
   while (*pString != 0x00)  
@@ -796,3 +786,4 @@ void LCDPutStr(char *pString, int x, int y, int Size, int fColor, int bColor)
   } 
 } 
 
+#include "font.c"

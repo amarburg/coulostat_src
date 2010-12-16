@@ -111,7 +111,7 @@ void LCDSetLine(int x0, int y0, int x1, int y1, int color);
 void LCDSetRect(int x0, int y0, int x1, int y1, unsigned char fill, int color); 
 void LCDSetCircle(int x0, int y0, int radius, int color); 
 void LCDPutChar(char c, int x, int y, int size, int fColor, int bColor); 
-void LCDPutStr(char *pString, int x, int y, int Size, int fColor, int bColor); 
+void LCDPutStr(const char *pString, int x, int y, int Size, int fColor, int bColor); 
 
 #ifdef __cplusplus
 }

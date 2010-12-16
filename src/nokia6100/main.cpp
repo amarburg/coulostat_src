@@ -65,6 +65,7 @@ void setup() {
     nokia_reset();
 
     InitLcd();
+    LCDClearScreen();
 }
 
 void loop() {
@@ -77,6 +78,8 @@ void loop() {
     addr++;
     if( addr > 131 ) { addr = 0; }
 
+    LCDPutStr("HELP!", 80,20, SMALL, BLACK, YELLOW);
+    LCDSetRect( 90, 70, 75, 120, FILL, YELLOW );
 
     delay(100);
 

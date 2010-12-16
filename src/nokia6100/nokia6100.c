@@ -49,6 +49,7 @@
 #define USART_CLKEN    BIT(11)
 #define USART_CPOL     BIT(10)
 #define USART_CPHA     BIT(9)
+#define USART_LBCL     BIT(8)
 
 
 
@@ -99,18 +100,18 @@ void nokia_init( void )
     usart_port *port;
     usart_pins *pins;
 
-    usart_init( USART2, 9600 );// 6000000UL );
+    /*usart_init( NOKIA_USART, 9600 );*/// 6000000UL );
     port = usart_dev_table[NOKIA_USART].base;
     pins = usart_dev_table[NOKIA_USART].pins;
 
-    /*uint32 clk_speed;
-    uint32 integer_part;
-    uint32 fractional_part;
-    uint32 tmp;
-    uint32 baud = 6000000UL;
+    //uint32 clk_speed;
+    //uint32 integer_part;
+    //uint32 fractional_part;
+    //uint32 tmp;
+    //uint32 baud = 6000000UL;
 
     rcc_clk_enable(usart_dev_table[NOKIA_USART].rcc_dev_num);
-    nvic_irq_enable(usart_dev_table[NOKIA_USART].nvic_dev_num); */
+    nvic_irq_enable(usart_dev_table[NOKIA_USART].nvic_dev_num); 
 
     /* Configure the pins appropriately  */
     gpio_set_mode(pins->gpio_port, pins->tx_pin, GPIO_MODE_AF_OUTPUT_PP);
@@ -126,22 +127,22 @@ void nokia_init( void )
       timer_set_mode(pins->timer_num, pins->compare_num, TIMER_DISABLED);
     }
 
-    /* set clock rate to 6MHz */
-    //port->CR1 |= USART_UE;
-    //port->BRR = 36000000L/6000000L; //APB1 bus max speed is 36MHz
-        /* Set baud rate  */
+    /* Set baud rate  */
 
-    /*clk_speed = 36000000UL;
-    integer_part = ((25 * clk_speed) / (4 * baud));
-    tmp = (integer_part / 100) << 4;
+    //clk_speed = (NOKIA_USART == USART1) ? 72000000UL : 36000000UL;
+    //integer_part = ((25 * clk_speed) / (4 * baud));
+    //tmp = (integer_part / 100) << 4;
 
-    fractional_part = integer_part - (100 * (tmp >> 4));
-    tmp |= (((fractional_part * 16) + 50) / 100) & ((uint8)0x0F);
+    //fractional_part = integer_part - (100 * (tmp >> 4));
+    //tmp |= (((fractional_part * 16) + 50) / 100) & ((uint8)0x0F);
 
-    port->BRR = (uint16)tmp;
-    port->CR1 |= (USART_RE | USART_TE | USART_M); */// RX, TX enable, 9-bit
+    //port->BRR = (uint16)tmp;
+    port->BRR = 1<<4; // For USART2, BRR = 1.0. corresponds to 2.25 Mbaud.  
+    port->CR1 |= (USART_TE | USART_M); // RX, TX enable, 9-bit
+    port->CR2 |= (USART_CLKEN | USART_LBCL); //enable SCK pin CPOL and CPHA are also in this register
 
-    port->CR2 |= USART_CLKEN; //enable SCK pin CPOL and CPHA are also in this register
+    // not CPOL = SCK idles low
+    // not CPHA = data clocked on first transition (in this case low-to-high)
     port->CR2 &= ~(USART_CPOL | USART_CPHA);
 
     nokia_disable_cs();
