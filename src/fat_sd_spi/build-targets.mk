@@ -1,11 +1,17 @@
-PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o \
-	       $(BUILD_PATH)/s1d15g00.o
+PROJECT_OBJS = $(BUILD_PATH)/fat_test_term.o \
+	       $(BUILD_PATH)/ff.o \
+	       $(BUILD_PATH)/term_io.o \
+	       $(BUILD_PATH)/fattime.o \
+	       $(BUILD_PATH)/sd_spi_stm32.o
 
 # I believe this overrides a maple-provided rule
 # 
 $(BUILD_PATH)/%.o: %.c
 	$(SILENT_CC) $(CC) $(CFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
 	
+$(BUILD_PATH)/%.o: %.cpp
+	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+
 # main project target
 $(BUILD_PATH)/main.o: main.cpp 
 	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES) -o $@ -c $< 

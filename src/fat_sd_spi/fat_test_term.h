@@ -6,8 +6,16 @@
 #ifndef FAT_TEST_TERM_H_
 #define FAT_TEST_TERM_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void fat_test_term_timerproc(void) __attribute__ ((section(".ramfunc")));
 int fat_test_term(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
