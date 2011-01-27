@@ -1,5 +1,6 @@
 PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o \
-	       $(BUILD_PATH)/s1d15g00.o
+	       $(BUILD_PATH)/s1d15g00.o \
+	       $(BUILD_PATH)/ui.o
 
 # I believe this overrides a maple-provided rule
 # 

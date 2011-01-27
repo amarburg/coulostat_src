@@ -28,7 +28,7 @@
  * Lifted heavily from James Lynch's August 30 2007 code.
  *
  * Contains code specific to the Espon controller.  Requires the following
- * hardware/SPI-specific functions to be defined elsewhere.
+ * hardware/SPI-specific functions to be defined elsewhere:WriteSpiData, WriteSpiCommand, LcdReset. 
  */
 
 #ifndef _S1D15G00_H_

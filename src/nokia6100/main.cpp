@@ -37,7 +37,91 @@ void do_noise(uint8 pin);
 void do_everything(void);
 void do_fast_gpio(void);
 
+
+char key_state;
+char key_pressed;
+
+
+// Map the six buttons as follows
+#define BTN_UP   0x01
+#define BTN_DOWN 0x02
+#define BTN_LEFT 0x04
+#define BTN_RIGHT 0x08
+#define BTN_GREEN 0x10
+#define BTN_RED   0x20
+#define BTN_ALL   0x3F
+
+#define BTN_GPIO   GPIOC_BASE
+#define BTN_UP_PIN 0
+#define BTN_DOWN_PIN 1
+#define BTN_LEFT_PIN 2
+#define BTN_RIGHT_PIN 3
+#define BTN_GREEN_PIN 4
+#define BTN_RED_PIN 5
+
+
+void button_init( void )
+{
+gpio_set_mode( BTN_GPIO, BTN_UP_PIN, GPIO_MODE_INPUT_FLOATING );
+gpio_set_mode( BTN_GPIO, BTN_DOWN_PIN, GPIO_MODE_INPUT_FLOATING );
+gpio_set_mode( BTN_GPIO, BTN_LEFT_PIN, GPIO_MODE_INPUT_FLOATING );
+gpio_set_mode( BTN_GPIO, BTN_RIGHT_PIN, GPIO_MODE_INPUT_FLOATING );
+gpio_set_mode( BTN_GPIO, BTN_GREEN_PIN, GPIO_MODE_INPUT_FLOATING );
+gpio_set_mode( BTN_GPIO, BTN_RED_PIN, GPIO_MODE_INPUT_FLOATING );
+}
+
+/* Use a version of the Danni debounce from here:
+ * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&p=189356
+ * As noted, this requires 4 consecutive samples to trigger
+ */
+void button_debounce_timerproc( void )  __attribute__ ((long_call, section (".ramsection")));
+
+void button_debounce_timerproc( void )
+{
+  static char ct0, ct1; 
+  char i; 
+  // Assemble key_input from GPIOs (inefficient for now)
+  char key_input =( gpio_read_bit( BTN_GPIO, BTN_UP_PIN ) ? BTN_UP : 0 ) | 
+                  ( gpio_read_bit( BTN_GPIO, BTN_DOWN_PIN ) ? BTN_DOWN : 0 ) |
+                  ( gpio_read_bit( BTN_GPIO, BTN_LEFT_PIN ) ? BTN_LEFT : 0 ) |
+                  ( gpio_read_bit( BTN_GPIO, BTN_RIGHT_PIN ) ? BTN_RIGHT : 0 ) |
+                  ( gpio_read_bit( BTN_GPIO, BTN_GREEN_PIN ) ? BTN_GREEN : 0 ) |
+                  ( gpio_read_bit( BTN_GPIO, BTN_RED_PIN ) ? BTN_RED : 0 ); 
+
+  i = key_state ^ ~key_input;           // key changed ? 
+  ct0 = ~( ct0 & i );                   // reset or count ct0 
+  ct1 = ct0 ^ (ct1 & i);                // reset or count ct1 
+  i &= ct0 & ct1;                       // count until roll over ? 
+  key_state ^= i;                       // then toggle debounced state 
+  // now debouncing finished 
+  key_pressed |= key_state & i;           // 0->1: key press detect 
+} 
+
+char button_get_keypress( char key_mask ) 
+{ 
+  // Do I want to do this?
+  //nvic_irq_disable_all();
+  key_mask &= key_pressed;                // read key(s) 
+  key_pressed ^= key_mask;                // clear key(s) 
+  //nvic_irq_enable_all();
+  return key_mask; 
+} 
+
+void SysTickHandler(void) __attribute__ ((long_call, section (".ramsection")));
+void SysTickHandler(void)
+{
+  static unsigned int count = 0;
+
+  /* Call the debounce code at 10 Hz */
+  if( (count % 100) == 0 )
+  button_debounce_timerproc();
+
+ if( ++count > 999 ) count = 0;
+}
+
 void setup() {
+  int row = 0;
+  int col = 0;
     /* Set up the LED to blink  */
     pinMode(LED_PIN, OUTPUT);
 
@@ -66,10 +150,16 @@ void setup() {
 
     InitLcd();
     LCDClearScreen();
+
+    // For 16x8 font, should get 8 rows and 16 columns
+    for( row = 0; row < 8; row++ )
+      for( col = 0; col < 16; col++ )
+        LCDPutChar( 'a' + col, 8*col, 16*row, LARGE,YELLOW,BLACK);
 }
 
 void loop() {
   static uint8 addr = 0;
+
     toggle ^= 1;
     digitalWrite(LED_PIN, toggle);
 
@@ -79,6 +169,7 @@ void loop() {
     if( addr > 131 ) { addr = 0; }
 
     LCDPutStr("HELP!", 80,20, SMALL, BLACK, YELLOW);
+
     LCDSetRect( 90, 70, 75, 120, FILL, YELLOW );
 
     delay(100);
@@ -312,10 +403,10 @@ void loop() {
                 COMM.println("");
                 // turn off LED
                 digitalWrite(LED_PIN, 0);
-                timer_init(1, 21);
-                timer_init(2, 21);
-                timer_init(3, 21);
-                timer_init(4, 21);
+                timer_init(TIMER1, 21);
+                timer_init(TIMER2, 21);
+                timer_init(TIMER3, 21);
+                timer_init(TIMER4, 21);
                 // make sure to skip the TX/RX headers
                 for(uint32 i = 2; i<sizeof(pwm_pins); i++) {
                     pinMode(pwm_pins[i], PWM);
@@ -336,10 +427,10 @@ void loop() {
                 for(uint32 i = 2; i<sizeof(pwm_pins); i++) {
                     pinMode(pwm_pins[i], OUTPUT);
                 }
-                timer_init(1, 1);
-                timer_init(2, 1);
-                timer_init(3, 1);
-                timer_init(4, 1);
+                timer_init(TIMER1, 1);
+                timer_init(TIMER2, 1);
+                timer_init(TIMER3, 1);
+                timer_init(TIMER4, 1);
                 COMM.println("(reset serial port)");
                 break;
             case 100:  // 'd'
@@ -565,10 +656,26 @@ void do_fast_gpio(void) {
 
 int main(void)
 {
+  char keys;
     setup();
 
     while (1) {
         loop();
+
+        keys = button_get_keypress( BTN_ALL );
+        if( keys & BTN_UP )
+          COMM.println("Up!");
+        if( keys & BTN_DOWN )
+          COMM.println("Down!");
+        if( keys & BTN_LEFT )
+          COMM.println("Left!");
+        if( keys & BTN_RIGHT )
+          COMM.println("Right!");
+        if( keys & BTN_GREEN )
+          COMM.println("Green!");
+        if( keys & BTN_RED )
+          COMM.println("Red!");
+
     }
     return 0;
 }
