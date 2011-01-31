@@ -14,6 +14,10 @@ push:
 	@$(GIT) push
 	@cd libmaple && $(GIT) push
 
+path:
+	export PATH=$(LIB_MAPLE_HOME)/../arm/bin:$(PATH)
+
+
 externs: chan-fat arm
 
 CHAN_FAT_URL = http://elm-chan.org/fsw/ff/ff8a.zip
