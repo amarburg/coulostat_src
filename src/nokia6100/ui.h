@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
   void refresh_ui( void );
-void ui_keypress( unsigned int keys );
+  void ui_keypress( unsigned int keys );
 
 #ifdef __cplusplus
 }

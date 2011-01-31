@@ -16,7 +16,7 @@ typedef enum ui_state {
   DO_MENU_HALF
 } ui_state_t;
 
-static ui_state_t current_ui_state = DO_MENU_FULL;
+static ui_state_t current_ui_state = DO_MENU_HALF
 
 typedef struct menu_item {
   const char *text;

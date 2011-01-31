@@ -7,7 +7,7 @@
 
 #include "wirish.h"
 #include "my_systick.h"
-
+#include "main.h"
 #include "nokia6100.h"
 #include "s1d15g00.h"
 
@@ -40,6 +40,8 @@ uint8 gpio_state[NUM_GPIO];
 
 void print_help(void);
 
+
+big_state_enum_t app_state;
 
 
 void setup() {
@@ -181,6 +183,18 @@ void print_help(void) {
     COMM.println("\tw: print Hello World on all 3 USARTS");
 }
 
+static inline void key_press_debug( unsigned char keys )
+{
+  if( keys & BTN_UP ) Serial1.println("up");
+  if( keys & BTN_DOWN ) Serial1.println("down");
+  if( keys & BTN_LEFT ) Serial1.println("left");
+  if( keys & BTN_RIGHT ) Serial1.println("right");
+  if( keys & BTN_GREEN ) Serial1.println("green");
+  if( keys & BTN_RED ) Serial1.println("red");
+}
+
+
+
 
 // Force init to be called *first*, i.e. before static object allocation.
 // Otherwise, statically allocated object that need libmaple may fail.
@@ -191,7 +205,6 @@ void print_help(void) {
 int main(void)
 {
   unsigned char keys;
-  //systick_disable();
     setup();
 
     while (1) {
@@ -204,19 +217,14 @@ int main(void)
         //Serial1.print(' ');
         //Serial1.println(keys+'a');
 
-        if( keys & BTN_UP ) Serial1.println("up");
-        if( keys & BTN_DOWN ) Serial1.println("down");
-        if( keys & BTN_LEFT ) Serial1.println("left");
-        if( keys & BTN_RIGHT ) Serial1.println("right");
-        if( keys & BTN_GREEN ) Serial1.println("green");
-        if( keys & BTN_RED ) Serial1.println("red");
+        key_press_debug( keys );
 
-        if( keys ) {
-          ui_keypress( keys );
+        switch( app_state ) {
+          case DO_MENU:
+            if( keys ) ui_keypress( keys );
+            refresh_ui();
+            break;
         }
-
-        refresh_ui();
-
     }
     return 0;
 }
