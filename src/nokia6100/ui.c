@@ -2,11 +2,14 @@
 
 
 #include "ui.h"
+#include "buttons.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
 
 #include "s1d15g00.h"
+#include "libmaple.h"
+#include "util.h"
 
 typedef enum ui_state {
   DO_MENU_FULL,
@@ -78,7 +81,10 @@ static const menu_item_t root_info = {
   };
 
 static const menu_item_t *current_item = &root_item1, 
-                   *top_of_screen_item = &root_item1;
+                   *top_of_screen_item = &root_item1,
+                   *current_menu = &root_item1,
+                   *up_menu   = NULL,
+                   *up_menu_last = NULL;
 
 
 #define FULL_MENU_NUM_ITEMS 8
@@ -106,18 +112,61 @@ void refresh_ui( void )
     num_items = HALF_MENU_NUM_ITEMS;
   }
 
-  assert( this_item != NULL );
+  ASSERT( this_item != NULL );
   for( ; (i < num_items) && this_item != NULL; i++ ) {
 
-    if( this_item = current_item ) 
-      LCD_PutStr( this_item->text, MENU_X, y_offset, MENU_FONT, MENU_HIGHLIGHT_FG, MENU_HIGHLIGHT_BG );
+    if( this_item == current_item ) 
+      LCDPutStr( this_item->text, y_offset,MENU_X, MENU_FONT, MENU_HIGHLIGHT_FG, MENU_HIGHLIGHT_BG );
     else
-      LCD_PutStr( this_item->text, MENU_X, y_offset, MENU_FONT, MENU_FG, MENU_BG );
+      LCDPutStr( this_item->text, y_offset, MENU_X, MENU_FONT, MENU_FG, MENU_BG );
 
     y_offset += LINE_HEIGHT;
     this_item = this_item->next;
   }
+  LCDSetRect(y_offset,0,132,132,FILL,MENU_BG);
 
+
+}
+
+void ui_keypress( unsigned int keys )
+{
+  menu_item_t *tmp;
+
+  if( keys & BTN_DOWN ) {
+    if( current_item->next != NULL )  {
+      current_item = current_item->next;
+    }
+  } else if( keys & BTN_UP ) {
+    // Find previous
+    tmp = current_menu;
+    if( current_item != current_menu ) {
+      while( (tmp != NULL) && (tmp->next != current_item) ) tmp = tmp->next;
+
+      ASSERT( tmp->next == current_item );
+
+      if( current_item ==  top_of_screen_item ) top_of_screen_item = tmp;
+      current_item = tmp;
+    }
+
+  } else if( keys & BTN_GREEN ) {
+    if( current_item->enter ) {
+      up_menu_last = current_item;
+      up_menu = current_menu;
+
+      current_menu = top_of_screen_item = current_item = current_item->enter;
+    }
+  } else if( keys & BTN_RED ) {
+    if( up_menu != NULL ) {
+      current_menu = up_menu;
+      //TODO This isn't quite right, actually...
+      top_of_screen_item = up_menu;
+
+      if( up_menu_last ) 
+        current_item = up_menu_last;
+      else
+        current_item = up_menu;
+    }
+  }
 
 
 }
