@@ -168,7 +168,7 @@ const unsigned char FONT8x16[97][16];
 // Author: James P Lynch August 30, 2007 
 // ***************************************************************************** 
 void InitLcd(void)  
-{ 
+{
   LcdReset();
 
   // Display control 
@@ -295,6 +295,8 @@ void LCDClearScreen(void)
   } 
 } 
  
+inline void LCDFillScreen( int color ) 
+  { LCDSetRect( 0,0,LCD_WIDTH,LCD_HEIGHT, FILL, color ); }
  
 // ************************************************************************************* 
 // LCDSetPixel.c 

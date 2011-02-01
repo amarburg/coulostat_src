@@ -221,8 +221,7 @@ int main(void)
 
         switch( app_state ) {
           case DO_MENU:
-            if( keys ) ui_keypress( keys );
-            refresh_ui();
+            refresh_ui( keys );
             break;
         }
     }
