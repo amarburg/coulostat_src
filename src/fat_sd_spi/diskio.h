@@ -10,6 +10,10 @@
 #include "integer.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Status of Disk Functions */
 typedef byte_t	DSTATUS;
 
@@ -22,9 +26,9 @@ typedef enum {
 	RES_PARERR		/* 4: Invalid Parameter */
 } DRESULT;
 
-
 /*---------------------------------------*/
 /* Prototypes for disk control functions */
+/* Which must be defined elsewhere       */
 
 int assign_drives (int, int);
 DSTATUS disk_initialize (byte_t);
@@ -35,6 +39,9 @@ DRESULT disk_write (byte_t, const byte_t*, DWORD, byte_t);
 #endif
 DRESULT disk_ioctl (byte_t, byte_t, void*);
 
+#ifdef __cplusplus
+}
+#endif
 
 
 /* Disk Status Bits (DSTATUS) */

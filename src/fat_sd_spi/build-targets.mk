@@ -2,7 +2,10 @@ PROJECT_OBJS = $(BUILD_PATH)/fat_test_term.o \
 	       $(BUILD_PATH)/ff.o \
 	       $(BUILD_PATH)/term_io.o \
 	       $(BUILD_PATH)/fattime.o \
-	       $(BUILD_PATH)/sd_spi_stm32.o
+	       $(BUILD_PATH)/sd_spi_stm32.o \
+	       $(BUILD_PATH)/my_systick.o 
+
+CFLAGS += -DUSER_PROVIDES_SYSTICK_HANDLER
 
 # I believe this overrides a maple-provided rule
 # 

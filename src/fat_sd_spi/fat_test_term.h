@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 void fat_test_term_timerproc(void) __attribute__ ((section(".ramfunc")));
-int fat_test_term(void);
+int fat_menu(void);
 
 #ifdef __cplusplus
 }

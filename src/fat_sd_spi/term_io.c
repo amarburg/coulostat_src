@@ -171,6 +171,7 @@ void put_dump (const byte_t *buff, DWORD ofs, int cnt)
     else
       xputc(buff[n]);
   }
+  xputc('\r');
   xputc('\n');
 }
 
@@ -184,7 +185,7 @@ void get_line (char *buff, int len)
 
   for (;;) {
     c = xgetc();
-    if (c == '\r') break;
+    if( (c == 0x0A) || (c==0x0D)) break;
     if ((c == '\b') && idx) {
       idx--; xputc(c);
       xputc(' '); xputc(c); // added by mthomas for Eclipse Terminal plug-in

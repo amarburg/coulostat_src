@@ -44,6 +44,7 @@
 #include "spi.h"
 #include "ffconf.h"
 #include "diskio.h"
+#include "main.h"
 
 // demo uses a command line option to define this (see Makefile):
 // #define STM32_SD_USE_DMA
@@ -84,7 +85,7 @@
 #define SPI_SD                   2
 
 /* Chip select? */
-#define GPIO_CS                  GPIOC_BASE
+#define GPIO_CS                  GPIOB_BASE
 #define GPIO_Pin_CS              12
 
 #define DMA_Channel_SPI_SD_RX    DMA1_Channel2
@@ -92,13 +93,14 @@
 #define DMA_FLAG_SPI_SD_TC_RX    DMA1_FLAG_TC2
 #define DMA_FLAG_SPI_SD_TC_TX    DMA1_FLAG_TC3
 
-#define GPIO_SPI_SD              GPIOC_BASE
+#define GPIO_SPI_SD              GPIOB_BASE
 #define GPIO_Pin_SPI_SD_SCK      13
 #define GPIO_Pin_SPI_SD_MISO     14
 #define GPIO_Pin_SPI_SD_MOSI     15
 
 #define RCC_APBPeriphClockCmd_SPI_SD  RCC_APB2PeriphClockCmd
-#define RCC_APBPeriph_SPI_SD     RCC_APB2Periph_SPI1
+#define RCC_APBPeriph_SPI_SD     RCC_APB2Periph_SPI2
+
 /* - for SPI1 and full-speed APB2: 72MHz/4 */
 #define SPI_BaudRatePrescaler_SPI_SD   CR1_BR_PRESCALE_256
 
@@ -162,18 +164,10 @@ enum speed_setting { INTERFACE_SLOW, INTERFACE_FAST };
 
 static void interface_speed( enum speed_setting speed )
 {
-  DWORD tmp;
-
-  /*!!AMM CR1 isn't easily exposed through the SPI wrappers ... */
-/*  tmp = SPI_SD->CR1;
-  if ( speed == INTERFACE_SLOW ) { */
-    /* Set slow clock (100k-400k) */
-/*    tmp = ( tmp | SPI_BaudRatePrescaler_256 );
-  } else { */
-    /* Set fast clock (depends on the CSD) */
-    /*tmp = ( tmp & ~SPI_BaudRatePrescaler_256 ) | SPI_BaudRatePrescaler_SPI_SD;
-  }
-  SPI_SD->CR1 = tmp; */
+  if ( speed == INTERFACE_SLOW )  
+    spi_set_prescaler( SPI_SD,CR1_BR_PRESCALE_256 );
+  else
+    spi_set_prescaler( SPI_SD,CR1_BR_PRESCALE_256 );
 }
 
 #if SOCKET_WP_CONNECTED
@@ -212,9 +206,10 @@ static void socket_cp_init(void)
   gpio_set_mode( SD_CP_GPIO, SD_CP_PIN, SD_CP_MODE );
 }
 
+// On this hardware, with a mild pull-up on CP, 1 = no card, 0 = card
 static inline DWORD socket_is_empty(void)
 {
-  return ( gpio_read_bit( SD_CP_GPIO, SD_CP_PIN ) ) ? socket_state_mask_cp : false;
+  return ( gpio_read_bit( SD_CP_GPIO, SD_CP_PIN ) ) ? false : socket_state_mask_cp;
 }
 
 #else
@@ -241,7 +236,6 @@ void card_power(uint8_t on)		/* switch FET for card-socket VCC */
 
 
 /*!!AMM GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; */
-
   if (on) {
     gpio_write_bit( SD_PWR_GPIO, SD_PWR_PIN, 0 );
   } else {
@@ -291,14 +285,14 @@ static byte_t stm32_spi_rw( byte_t out )
 
   /* Send byte through the SPI peripheral */
   /*SPI_I2S_SendData(SPI_SD, out); */
-  spi_tx_byte( SPI_SD, out );
+  return spi_tx_byte( SPI_SD, out );
 
   /* Wait to receive a byte */
   /*while (SPI_I2S_GetFlagStatus(SPI_SD, SPI_I2S_FLAG_RXNE) == RESET) { ; } */
 
   /* Return the byte read from the SPI bus */
   /*return SPI_I2S_ReceiveData(SPI_SD); */
-  return spi_rx( SPI_SD );
+  //return spi_rx( SPI_SD );
 }
 
 
@@ -316,6 +310,7 @@ static byte_t stm32_spi_rw( byte_t out )
 static byte_t rcvr_spi (void)
 {
   return stm32_spi_rw(0xff);
+  //return spi_rx( SPI_SD );
 }
 
 /* Alternative macro to receive data fast */
@@ -460,14 +455,17 @@ static void power_on (void)
 /*  RCC_APBPeriphClockCmd_SPI_SD(RCC_APBPeriph_SPI_SD, ENABLE); */
 
   card_power(1);
-  socket_cp_init();
-  socket_wp_init();
 
-  for (Timer1 = 25; Timer1; );	/* Wait for 250ms */
+  //for (Timer1 = 25; Timer1; );	/* Wait for 250ms */
+  delay(250);
 
   /* Configure I/O for Flash Chip select */
   /*!!AMM investigate the 50MHz flag... */
-  gpio_set_mode( GPIO_CS, GPIO_Pin_CS, MODE_OUTPUT_PP );
+  gpio_set_mode( GPIO_CS, GPIO_Pin_CS, GPIO_MODE_OUTPUT_PP );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_SCK, GPIO_MODE_AF_OUTPUT_PP );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MOSI, GPIO_MODE_AF_OUTPUT_PP );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MISO, GPIO_MODE_OUTPUT_PP );
+
   /*GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_CS;
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -498,6 +496,7 @@ static void power_on (void)
   SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
   SPI_InitStructure.SPI_CRCPolynomial = 7; */
 
+  // This handles GPIO setup on SCK, MISO and MOSI
   spi_init( SPI_SD, SPI_BaudRatePrescaler_SPI_SD, SPI_MSBFIRST, 0x0 );
 
   /*SPI_Init(SPI_SD, &SPI_InitStructure); */
@@ -535,9 +534,10 @@ static void power_off (void)
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPD;
   GPIO_Init(GPIO_SPI_SD, &GPIO_InitStructure); */
 
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_SCK, MODE_OUTPUT_PP );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MOSI, MODE_OUTPUT_PP );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MISO, MODE_OUTPUT_PP );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_SCK, GPIO_MODE_INPUT_PD );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MOSI, GPIO_MODE_INPUT_PD );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MISO, GPIO_MODE_INPUT_PD );
+  gpio_set_mode( GPIO_CS, GPIO_Pin_CS, GPIO_MODE_INPUT_PD );
 
   card_power(0);
 
@@ -635,7 +635,7 @@ byte_t send_cmd (
     DWORD arg		/* Argument */
     )
 {
-  byte_t n, res;
+  byte_t n, res = 0;
 
 
   if (cmd & 0x80) {	/* ACMD<n> is the command sequence of CMD55-CMD<n> */
@@ -696,22 +696,38 @@ DSTATUS disk_initialize (
   if (Stat & STA_NODISK) return Stat;	/* No card in the socket */
 
   power_on();							/* Force socket power on and initialize interface */
+
   interface_speed(INTERFACE_SLOW);
   for (n = 10; n; n--) rcvr_spi();	/* 80 dummy clocks */
 
   ty = 0;
   if (send_cmd(CMD0, 0) == 1) {			/* Enter Idle state */
-    Timer1 = 100;						/* Initialization timeout of 1000 milliseconds */
+    //
+    // M. Thomas has a 1 second timeout but I was having initialization errors with
+    // a recent 2GB microSD.  Maybe my SPI bus is too slow?
+    Timer1 = 500;						/* Initialization timeout of x milliseconds */
+
+    // Only new cards understand CMD8, but you have to send it
     if (send_cmd(CMD8, 0x1AA) == 1) {	/* SDHC */
-      for (n = 0; n < 4; n++) ocr[n] = rcvr_spi();		/* Get trailing return value of R7 response */
-      if (ocr[2] == 0x01 && ocr[3] == 0xAA) {				/* The card can work at VDD range of 2.7-3.6V */
-        while (Timer1 && send_cmd(ACMD41, 1UL << 30));	/* Wait for leaving idle state (ACMD41 with HCS bit) */
-        if (Timer1 && send_cmd(CMD58, 0) == 0) {		/* Check CCS bit in the OCR */
+
+      // Get trailing return value of R7 response 
+      for (n = 0; n < 4; n++) ocr[n] = rcvr_spi();		
+
+      // The card can work at VDD range of 2.7-3.6V 
+      if (ocr[2] == 0x01 && ocr[3] == 0xAA) {				
+        do {
+          cmd = send_cmd(ACMD41, 1UL<< 30 );
+          xprintf("%u %x\r\n",Timer1, cmd);
+        } while (Timer1 && cmd);	/* Wait for leaving idle state (ACMD41 with HCS bit) */
+       
+        // Check CCS bit in the OCR.  If setm it's a high capacity card
+        if (Timer1 && send_cmd(CMD58, 0) == 0) {		
           for (n = 0; n < 4; n++) ocr[n] = rcvr_spi();
           ty = (ocr[0] & 0x40) ? CT_SD2 | CT_BLOCK : CT_SD2;
         }
       }
     } else {							/* SDSC or MMC */
+      // Older cards don't understand CMD8
       if (send_cmd(ACMD41, 0) <= 1) 	{
         ty = CT_SD1; cmd = ACMD41;	/* SDSC */
       } else {
@@ -847,7 +863,7 @@ DRESULT disk_ioctl (
     )
 {
   DRESULT res;
-  byte_t n, csd[16], *ptr = buff;
+  byte_t n, csd[16], *ptr = (byte_t *)buff;
   WORD csize;
 
   if (drv) return RES_PARERR;
@@ -857,8 +873,10 @@ DRESULT disk_ioctl (
   if (ctrl == CTRL_POWER) {
     switch (*ptr) {
       case 0:		/* Sub control code == 0 (POWER_OFF) */
-        if (chk_power())
+        if (chk_power()) {
+          xprintf("Power is on, so we'll turn it off");
           power_off();		/* Power off */
+        }
         res = RES_OK;
         break;
       case 1:		/* Sub control code == 1 (POWER_ON) */
@@ -968,6 +986,13 @@ DRESULT disk_ioctl (
 #endif /* _USE_IOCTL != 0 */
 
 
+// Some hardware initialization which should bjust be run once at the outset
+void disk_subsystem_init( void )
+{
+  socket_cp_init();
+  socket_wp_init();
+}
+
 /*-----------------------------------------------------------------------*/
 /* Device Timer Interrupt Procedure  (Platform dependent)                */
 /*-----------------------------------------------------------------------*/
@@ -977,7 +1002,8 @@ void disk_timerproc (void)
 {
   static DWORD pv;
   DWORD ns;
-  byte_t n, s;
+  DWORD n; 
+  byte_t s;
 
 
   n = Timer1;                /* 100Hz decrement timers */

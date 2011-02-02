@@ -4,9 +4,13 @@
 // choose your weapon
 #define COMM SerialUSB
 
+#define LED_PIN 13
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void return_to_main_menu( void );
 
 // This is something of the reverse sense of "extern "C"" from usual.
 // This defines these C++ functions as using C linkage ... so
