@@ -82,25 +82,19 @@ static FRESULT scan_files (char* path)
 
 static void put_rc (FRESULT rc)
 {
-  const char *p;
-  static const char str[] =
-    "OK\0" "NOT_READY\0" "NO_FILE\0" "FR_NO_PATH\0" "INVALID_NAME\0" "INVALID_DRIVE\0"
-    "DENIED\0" "EXIST\0" "RW_ERROR\0" "WRITE_PROTECTED\0" "NOT_ENABLED\0"
-    "NO_FILESYSTEM\0" "INVALID_OBJECT\0" "MKFS_ABORTED\0";
+  static const char *str[] = {
+    "OK", "DISK_ERR",  "INT_ERR", "NOT_READY", "NO_FILE", "NO_PATH", "INVALID_NAME", "DENIED",
+    "EXIST","INVALUD_OBJECT","WRITE_PROTECTED","INVALID_DRIVE","NOT_ENABLED","NO_FILESYSTEM",
+    "MKFS_ABORTED","TIMEOUT","LOCKED","NOT_ENOUGH_CORE","TOO_MANY_OPEN_FILES" };
 
-  int i;
-
-  for (p = str, i = 0; i != rc && *p; i++) {
-    while(*p++);
-  }
-  xprintf("rc=%u FR_%s\n", (UINT)rc, p);
+  xprintf("rc=%u FR_%s"ENDL, (UINT)rc, str[(int)rc]);
 }
 
 static void put_dresult( DRESULT rc )
 {
   static const char *str[] = { "OK", "ERROR", "WRPRT", "NOTRDY", "PARERR" };
 
-  xprintf("rc=%u, RF_%s\r", rc, str[(int)rc] );
+  xprintf("rc=%u, RF_%s"ENDL, rc, str[(int)rc] );
 }
 
 static void put_dstatus( DSTATUS rc )
@@ -109,7 +103,7 @@ static void put_dstatus( DSTATUS rc )
   if( rc & STA_NOINIT ) xprintf("NOINIT ");
   if( rc & STA_NODISK ) xprintf("NODISK ");
   if( rc & STA_PROTECT ) xprintf("PROTECT");
-  xputc('\r');
+  xputc_endl();
 }
 
 
@@ -180,9 +174,9 @@ int fat_menu (void)
             case 'd' :	/* dd [<lba>] - Dump sector */
               if (!xatoi(&ptr, &p2)) p2 = sect;
               dres = disk_read(0, Buff, p2, 1);
-              if (dres) { xprintf("rc=%d\n", (WORD)dres); break; }
+              if (dres) { xprintf("rc=%d"ENDL, (WORD)dres); break; }
               sect = p2 + 1;
-              xprintf("Sector:%lu\n", p2);
+              xprintf("Sector:%lu"ENDL, p2);
               for (ptr=(char*)Buff, ofs = 0; ofs < 0x200; ptr+=16, ofs+=16)
                 put_dump((byte_t*)ptr, ofs, 16);
               break;
@@ -195,23 +189,23 @@ int fat_menu (void)
             case 's' :	/* ds - Show disk status */
               Buff[0]=2;
               if (disk_ioctl(0, CTRL_POWER, Buff) == RES_OK )
-              { xprintf("Power is %s\r\n", Buff[1] ? "ON" : "OFF"); }
+              { xprintf("Power is %s"ENDL, Buff[1] ? "ON" : "OFF"); }
               if (disk_ioctl(0, GET_SECTOR_COUNT, &p2) == RES_OK)
-              { xprintf("Drive size: %lu sectors\r\n", p2); }
+              { xprintf("Drive size: %lu sectors"ENDL, p2); }
               if (disk_ioctl(0, GET_SECTOR_SIZE, &w1) == RES_OK)
-              { xprintf("Sector size: %u\r\n", w1); }
+              { xprintf("Sector size: %u"ENDL, w1); }
               if (disk_ioctl(0, GET_BLOCK_SIZE, &p2) == RES_OK)
-              { xprintf("Erase block size: %lu sectors\r\n", p2); }
+              { xprintf("Erase block size: %lu sectors"ENDL, p2); }
               if (disk_ioctl(0, MMC_GET_TYPE, &b1) == RES_OK)
-              { xprintf("MMC/SDC type: %u\r\n", b1); }
+              { xprintf("MMC/SDC type: %u"ENDL, b1); }
               if (disk_ioctl(0, MMC_GET_CSD, Buff) == RES_OK)
-              { xputs("CSD:\r\n"); put_dump(Buff, 0, 16); }
+              { xputs("CSD:"ENDL); put_dump(Buff, 0, 16); }
               if (disk_ioctl(0, MMC_GET_CID, Buff) == RES_OK)
-              { xputs("CID:\r\n"); put_dump(Buff, 0, 16); }
+              { xputs("CID:"ENDL); put_dump(Buff, 0, 16); }
               if (disk_ioctl(0, MMC_GET_OCR, Buff) == RES_OK)
-              { xputs("OCR:\r\n"); put_dump(Buff, 0, 4); }
+              { xputs("OCR:"ENDL); put_dump(Buff, 0, 4); }
               if (disk_ioctl(0, MMC_GET_SDSTAT, Buff) == RES_OK) {
-                xputs("SD Status:\r\n");
+                xputs("SD Status:"ENDL);
                 for (s1 = 0; s1 < 64; s1 += 16) put_dump(Buff+s1, s1, 16);
               }
               break;
@@ -243,20 +237,20 @@ int fat_menu (void)
                 if (xatoi(&ptr, &p2))
                   Buff[p1++] = (byte_t)p2;
                 else
-                  xputs("???\n");
+                  xputs("???"ENDL);
               }
               break;
 
             case 'r' :	/* br <lba> [<num>] - Read disk into R/W buffer */
               if (!xatoi(&ptr, &p2)) break;
               if (!xatoi(&ptr, &p3)) p3 = 1;
-              xprintf("rc=%u\n", (WORD)disk_read(0, Buff, p2, p3));
+              xprintf("rc=%u"ENDL, (WORD)disk_read(0, Buff, p2, p3));
               break;
 
             case 'w' :	/* bw <lba> [<num>] - Write R/W buffer into disk */
               if (!xatoi(&ptr, &p2)) break;
               if (!xatoi(&ptr, &p3)) p3 = 1;
-              xprintf("rc=%u\n", (WORD)disk_write(0, Buff, p2, p3));
+              xprintf("rc=%u"ENDL, (WORD)disk_write(0, Buff, p2, p3));
               break;
 
             case 'f' :	/* bf <val> - Fill working buffer */
@@ -277,15 +271,15 @@ int fat_menu (void)
             case 's' :	/* fs - Show logical drive status */
               res = f_getfree("", (DWORD*)&p2, &fs);
               if (res) { put_rc(res); break; }
-              xprintf("FAT type = %u (%s)\r\n"
-                  "Bytes/Cluster = %lu\r\n"
-                  "Number of FATs = %u\r\n"
-                  "Root DIR entries = %u\r\n"
-                  "Sectors/FAT = %lu\r\n"
-                  "Number of clusters = %lu\r\n"
-                  "FAT start (lba) = %lu\r\n"
-                  "DIR start (lba,clustor) = %lu\r\n"
-                  "Data start (lba) = %lu\r\n\r\n",
+              xprintf("FAT type = %u (%s)"ENDL
+                  "Bytes/Cluster = %lu"ENDL
+                  "Number of FATs = %u"ENDL
+                  "Root DIR entries = %u"ENDL
+                  "Sectors/FAT = %lu"ENDL
+                  "Number of clusters = %lu"ENDL
+                  "FAT start (lba) = %lu"ENDL
+                  "DIR start (lba,clustor) = %lu"ENDL
+                  "Data start (lba) = %lu"ENDL ENDL,
                   (WORD)fs->fs_type,
                   (fs->fs_type==FS_FAT12) ? "FAT12" : (fs->fs_type==FS_FAT16) ? "FAT16" : "FAT32",
                   (DWORD)fs->csize * 512, (WORD)fs->n_fats,
@@ -299,10 +293,10 @@ int fat_menu (void)
 #endif
               res = scan_files(ptr);
               if (res) { put_rc(res); break; }
-              xprintf("%u files, %lu bytes.\r\n"
-                  "%u folders.\r\n"
-                  "%lu KB total disk space.\r\n"
-                  "%lu KB available.\r\n",
+              xprintf("%u files, %lu bytes."ENDL
+                  "%u folders."ENDL
+                  "%lu KB total disk space."ENDL
+                  "%lu KB available."ENDL,
                   acc_files, acc_size, acc_dirs,
                   (fs->n_fatent - 2) * (fs->csize / 2), p2 * (fs->csize / 2)
                   );
@@ -335,15 +329,14 @@ int fat_menu (void)
                     (Finfo.ftime >> 11), (Finfo.ftime >> 5) & 63,
                     Finfo.fsize, &(Finfo.fname[0]));
 #if _USE_LFN
-                xprintf("  %s\r\n", Lfname);
+                xprintf("  %s"ENDL, Lfname);
 #else
-                xputc('\r');
-                xputc('\n');
+                xputc_endl();
 #endif
               }
-              xprintf("%4u File(s),%10lu bytes total\r\n%4u Dir(s)", s1, p1, s2);
+              xprintf("%4u File(s),%10lu bytes total" ENDL "%4u Dir(s)", s1, p1, s2);
               if (f_getfree(ptr, (DWORD*)&p1, &fs) == FR_OK)
-                xprintf(", %10lu bytes free\r\n", p1 * fs->csize * 512);
+                xprintf(", %10lu bytes free"ENDL, p1 * fs->csize * 512);
               break;
 
             case 'o' :	/* fo <mode> <file> - Open a file */
@@ -361,7 +354,7 @@ int fat_menu (void)
               res = f_lseek(&File1, p1);
               put_rc(res);
               if (res == FR_OK)
-                xprintf("fptr=%lu(0x%lX)\n", File1.fptr, File1.fptr);
+                xprintf("fptr=%lu(0x%lX)"ENDL, File1.fptr, File1.fptr);
               break;
 
             case 'd' :	/* fd <len> - read and dump file from current fp */
@@ -393,7 +386,7 @@ int fat_menu (void)
                 p2 += s2;
                 if (cnt != s2) break;
               }
-              xprintf("%lu bytes read with %lu kB/sec.\n", p2, p2 / Timer);
+              xprintf("%lu bytes read with %lu kB/sec."ENDL, p2, p2 / Timer);
               break;
 
             case 'w' :	/* fw <len> <val> - write file */
@@ -412,7 +405,7 @@ int fat_menu (void)
                 p2 += s2;
                 if (cnt != s2) break;
               }
-              xprintf("%lu bytes written with %lu kB/sec.\n", p2, p2 / Timer);
+              xprintf("%lu bytes written with %lu kB/sec."ENDL, p2, p2 / Timer);
               break;
 
             case 'n' :	/* fn <old_name> <new_name> - Change file/dir name */
@@ -460,14 +453,14 @@ int fat_menu (void)
               while (*ptr2 == ' ') ptr2++;
               xprintf("Opening \"%s\"", ptr);
               res = f_open(&File1, ptr, FA_OPEN_EXISTING | FA_READ);
-              xputc('\n');
+              xputc_endl();
               if (res) {
                 put_rc(res);
                 break;
               }
               xprintf("Creating \"%s\"", ptr2);
               res = f_open(&File2, ptr2, FA_CREATE_ALWAYS | FA_WRITE);
-              xputc('\n');
+              xputc_endl();
               if (res) {
                 put_rc(res);
                 f_close(&File1);
@@ -479,17 +472,17 @@ int fat_menu (void)
               for (;;) {
                 res = f_read(&File1, Buff, blen, &s1);
                 if (res || s1 == 0) {
-                  xprintf("EOF\n");
+                  xprintf("EOF"ENDL);
                   break;   /* error or eof */
                 }
                 res = f_write(&File2, Buff, s1, &s2);
                 p1 += s2;
                 if (res || s2 < s1) {
-                  xprintf("disk full\n");
+                  xprintf("disk full"ENDL);
                   break;   /* error or disk full */
                 }
               }
-              xprintf("%lu bytes copied with %lu kB/sec.\n", p1, p1 / Timer);
+              xprintf("%lu bytes copied with %lu kB/sec."ENDL, p1, p1 / Timer);
               f_close(&File1);
               f_close(&File2);
               break;
@@ -505,7 +498,7 @@ int fat_menu (void)
             case 'z' :	/* fz [<rw size>] - Change R/W length for fr/fw/fx command */
               if (xatoi(&ptr, &p1) && p1 >= 1 && (size_t)p1 <= sizeof(Buff))
                 blen = p1;
-              xprintf("blen=%u\n", blen);
+              xprintf("blen=%u"ENDL, blen);
               break;
           }
           break;
@@ -545,14 +538,26 @@ int fat_menu (void)
         case '?':
         case 'h':
           COMM.println("Help:");
-          COMM.println(" p <0|1>         Turn power on and off");
-          COMM.println(" di              Disk initialize");
-          COMM.println(" ds              Disk status");
-          COMM.println(" fi              FAT initialize");
-          COMM.println(" fs              FAT status");
-          COMM.println(" fl <path>       Directory listing");
-          COMM.println(" fk <name>       Create directory");
-          COMM.println(" fx <src> <dst>  Copy file");
+          COMM.println(" p <0|1>          Turn power on and off");
+          COMM.println(" md <address> [<count>]   Dump memory");
+          COMM.println(" dd <lba>         Dump sector");
+          COMM.println(" di               Disk initialize");
+          COMM.println(" ds               Disk status");
+          COMM.println(" bf <val>         Fill working buffer with <val>");
+          COMM.println(" fi               FAT initialize");
+          COMM.println(" fs               FAT status");
+          COMM.println(" fl <path>        Directory listing");
+          COMM.println(" fo <mode> <file> Open file (1 = read, 2 = write, 4 = create new)");
+          COMM.println(" fe <offset>      Seek file pointer");
+          COMM.println(" fd <len>         Read and bump from current fp");
+          COMM.println(" fr <len>         Read file");
+          COMM.println(" fo <len> <val>   Write file");
+          COMM.println(" fn <old> <new>   Rename file/dir");
+          COMM.println(" fu <name>        Unlink (delete) file/dir");
+          COMM.println(" fv               Truncate file to current read/write point");
+          COMM.println(" fc               Close file");
+          COMM.println(" fk <name>        Create directory");
+          COMM.println(" fx <src> <dst>   Copy file");
           break;
 
         case 'x' :

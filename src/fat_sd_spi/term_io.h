@@ -11,6 +11,9 @@ extern "C" {
 #define xgetc() (char)comm_get()
 #define xavail() comm_test()
 
+static inline void xputc_endl( void ) { xputc('\r'); xputc('\n'); }
+#define ENDL "\r\n"
+
 int xatoi (char**, long*);
 void xputs (const char*);
 void xitoa (long, int, int);

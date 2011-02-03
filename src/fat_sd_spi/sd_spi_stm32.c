@@ -102,7 +102,8 @@
 #define RCC_APBPeriph_SPI_SD     RCC_APB2Periph_SPI2
 
 /* - for SPI1 and full-speed APB2: 72MHz/4 */
-#define SPI_BaudRatePrescaler_SPI_SD   CR1_BR_PRESCALE_256
+#define SPI_FAST_PRESCALER  CR1_BR_PRESCALE_4
+#define SPI_SLOW_PRESCALER  CR1_BR_PRESCALE_256
 
 #else
 #error "unsupported board"
@@ -132,11 +133,6 @@
 #define SELECT()       gpio_write_bit( GPIO_CS, GPIO_Pin_CS, 0 ) 
 #define DESELECT()     gpio_write_bit( GPIO_CS, GPIO_Pin_CS, 1 ) 
 
-/* Manley EK-STM32F board does not offer socket contacts -> dummy values: */
-#define SOCKPORT	1			/* Socket contact port */
-#define SOCKWP		0			/* Write protect switch (PB5) */
-#define SOCKINS		0			/* Card detect switch (PB4) */
-
 #if (_MAX_SS != 512) || (_FS_READONLY == 0) || (STM32_SD_DISK_IOCTRL_FORCE == 1)
 #define STM32_SD_DISK_IOCTRL   1
 #else
@@ -165,9 +161,9 @@ enum speed_setting { INTERFACE_SLOW, INTERFACE_FAST };
 static void interface_speed( enum speed_setting speed )
 {
   if ( speed == INTERFACE_SLOW )  
-    spi_set_prescaler( SPI_SD,CR1_BR_PRESCALE_256 );
+    spi_set_prescaler( SPI_SD, SPI_SLOW_PRESCALER );
   else
-    spi_set_prescaler( SPI_SD,CR1_BR_PRESCALE_256 );
+    spi_set_prescaler( SPI_SD, SPI_FAST_PRESCALER );
 }
 
 #if SOCKET_WP_CONNECTED
@@ -497,7 +493,7 @@ static void power_on (void)
   SPI_InitStructure.SPI_CRCPolynomial = 7; */
 
   // This handles GPIO setup on SCK, MISO and MOSI
-  spi_init( SPI_SD, SPI_BaudRatePrescaler_SPI_SD, SPI_MSBFIRST, 0x0 );
+  spi_init( SPI_SD, SPI_SLOW_PRESCALER, SPI_MSBFIRST, 0x0 );
 
   /*SPI_Init(SPI_SD, &SPI_InitStructure); */
   /*SPI_CalculateCRC(SPI_SD, DISABLE); */
@@ -717,7 +713,7 @@ DSTATUS disk_initialize (
       if (ocr[2] == 0x01 && ocr[3] == 0xAA) {				
         do {
           cmd = send_cmd(ACMD41, 1UL<< 30 );
-          xprintf("%u %x\r\n",Timer1, cmd);
+          //xprintf("%u %x\r\n",Timer1, cmd);
         } while (Timer1 && cmd);	/* Wait for leaving idle state (ACMD41 with HCS bit) */
        
         // Check CCS bit in the OCR.  If setm it's a high capacity card

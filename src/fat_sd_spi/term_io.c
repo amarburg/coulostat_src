@@ -1,6 +1,8 @@
 #include <stdarg.h>
 #include "term_io.h"
 
+
+
 int xatoi (char **str, long *res)
 {
   DWORD val;
