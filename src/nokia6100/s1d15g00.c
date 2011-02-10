@@ -676,7 +676,7 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
   unsigned int nCols; 
   unsigned int nRows; 
   unsigned int nBytes; 
-  unsigned int stopCol;
+  unsigned int stopCol, stopRow;
   unsigned char PixelRow; 
   unsigned char Mask; 
   unsigned int Word0; 
@@ -700,6 +700,18 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
   // TODO: Catch clipping.  Slightly more complicated because
   // data is sent out in pairs of pixels,
   // and because row array is upside down.
+  stopCol = nCols;
+  if( (y+nCols) > LCD_WIDTH ) {
+   stopCol = LCD_WIDTH-y;
+   if( stopCol % 2 !=0 ) stopCol--;
+   if( stopCol <= 0 ) return -1;
+  }
+
+  stopRow = nRows;
+  if( (x+nRows) > LCD_HEIGHT ) {
+    stopRow = LCD_HEIGHT-x;
+    if( stopRow <= 0 ) return -1;
+  }
   
   // Row address set (command 0x2B) 
   WriteSpiCommand(PASET); 
@@ -709,7 +721,7 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
   // Column address set (command 0x2A) 
   WriteSpiCommand(CASET); 
   WriteSpiData(y); 
-  WriteSpiData(y + nCols - 1); 
+  WriteSpiData(y + stopCol - 1); 
 
   // WRITE MEMORY 
   WriteSpiCommand(RAMWR); 
@@ -725,30 +737,40 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
     Mask = 0x80; 
     for (j = 0; j < nCols; j += 2)  
     { 
-      // if pixel bit set, use foreground color; else use the background color 
-      // now get the pixel color for two successive pixels 
-      if ((*pChar & Mask) == 0) 
-        Word0 = bColor; 
-      else 
-        Word0 = fColor; 
-      Mask = Mask >> 1; 
+      // Somewhat inefficient, use the loops to step through the
+      // data even if you're not displaying it.
+      // Could be replaced by some clever addressing if you know
+      // bytes/row.
+      if( (j < stopCol) && (i < stopRow)  ) {
+        
+        // if pixel bit set, use foreground color; else use the background color 
+        // now get the pixel color for two successive pixels 
+        if ((*pChar & Mask) == 0) 
+          Word0 = bColor; 
+        else 
+          Word0 = fColor; 
+        Mask = Mask >> 1; 
 
-      if ((*pChar & Mask) == 0) 
-        Word1 = bColor; 
-      else 
-        Word1 = fColor; 
-      Mask = Mask >> 1; 
+        if ((*pChar & Mask) == 0) 
+          Word1 = bColor; 
+        else 
+          Word1 = fColor; 
+        Mask = Mask >> 1; 
 
-      // use this information to output three data bytes 
-      WriteSpiData((Word0 >> 4) & 0xFF); 
-      WriteSpiData(((Word0 & 0xF) << 4) | ((Word1 >> 8) & 0xF)); 
-      WriteSpiData(Word1 & 0xFF); 
+        // use this information to output three data bytes 
+        WriteSpiData((Word0 >> 4) & 0xFF); 
+        WriteSpiData(((Word0 & 0xF) << 4) | ((Word1 >> 8) & 0xF)); 
+        WriteSpiData(Word1 & 0xFF); 
+      }
 
       if( Mask == 0 ) {
         Mask = 0x80;
         pChar++;
       }
     } 
+
+    // If a row doesn't use a whole number of bytes, advance
+    if( Mask != 0x80 ) pChar++;
   } 
 
 
