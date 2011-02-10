@@ -2,8 +2,6 @@
 **  Font data for Microsoft Sans Serif 59pt
 */
 
-#include "bitmapDb.h"
-
 /* Character bitmaps for Microsoft Sans Serif 59pt */
 const unsigned char BIGFONT[] = 
 {
