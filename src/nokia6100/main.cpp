@@ -80,10 +80,14 @@ void setup() {
   LCDClearScreen();
   LCDSetRect(0,0,132,132,FILL,BLACK);
 
+  LCDPutChar('1', 0,0, HUGE, RED, BLACK );
+  LCDPutStr( "06", 60,0, HUGE, YELLOW,BLACK );
   // For 16x8 font, should get 8 rows and 16 columns
   //for( row = 0; row < 8; row++ )
   //  for( col = 0; col < 16; col++ )
   //    LCDPutChar( 'a' + col, 16*row,8*col, LARGE,BLACK,YELLOW);
+  //
+  Serial1.println("Finished with init");
 }
 
 void loop() {
