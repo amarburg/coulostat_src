@@ -604,7 +604,7 @@ void LCDSetCircle(int x0, int y0, int radius, int color)
 // fcolor = 12-bit foreground color value rrrrggggbbbb 
 // bcolor = 12-bit background color value rrrrggggbbbb 
 // 
-// Returns: nothing 
+// Returns: width of character printed (in pixels)
 // 
 // Notes: Here's an example to display "E" at address (20,20) 
 // 
@@ -667,7 +667,7 @@ void LCDSetCircle(int x0, int y0, int radius, int color)
 // 
 // Author: James P Lynch August 30, 2007 
 // ***************************************************************************** 
-void LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)  
+int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)  
 { 
   extern const unsigned char FONT6x8[97][8]; 
   extern const unsigned char FONT8x8[97][8]; 
@@ -676,84 +676,86 @@ void LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
   unsigned int nCols; 
   unsigned int nRows; 
   unsigned int nBytes; 
+  unsigned int stopCol;
   unsigned char PixelRow; 
   unsigned char Mask; 
   unsigned int Word0; 
   unsigned int Word1; 
   unsigned char *pFont; 
   unsigned char *pChar; 
-  unsigned char *FontTable[] = {(unsigned char *)FONT6x8, (unsigned char *)FONT8x8, 
-                                (unsigned char *)FONT8x16}; 
   char offset_char;
   char this_byte;
-  const FONT_INFO *font;
+  const FONT_INFO *font = font_table[size];
 
-    // Hack for the moment
-    font = font_table[size];
-   offset_char = c - font->startChar;
-   if( (offset_char < 0) || (offset_char > font->endChar) ) return;
-   if( font->charInfo[offset_char].width == 0 ) return;
-   
-   nRows = font->charInfo[offset_char].height;
-   nCols = font->charInfo[offset_char].width;
+  offset_char = c - font->startChar;
+  if( (offset_char < 0) || (offset_char > font->endChar) ) return;
+  if( font->charInfo[offset_char].width == 0 ) return;
 
-   ASSERT(  font->charInfo[offset_char].offset > 0 );
-   pChar = &(font->data[ font->charInfo[offset_char].offset ]);
+  nRows = font->charInfo[offset_char].height;
+  nCols = font->charInfo[offset_char].width;
 
-   // Row address set (command 0x2B) 
-   WriteSpiCommand(PASET); 
-   WriteSpiData(x); 
-   WriteSpiData(x + nRows - 1); 
+  ASSERT(  font->charInfo[offset_char].offset > 0 );
+  pChar = &(font->data[ font->charInfo[offset_char].offset ]);
 
-   // Column address set (command 0x2A) 
-   WriteSpiCommand(CASET); 
-   WriteSpiData(y); 
-   WriteSpiData(y + nCols - 1); 
+  // TODO: Catch clipping.  Slightly more complicated because
+  // data is sent out in pairs of pixels,
+  // and because row array is upside down.
+  
+  // Row address set (command 0x2B) 
+  WriteSpiCommand(PASET); 
+  WriteSpiData(x); 
+  WriteSpiData(x + nRows - 1); 
 
-   // WRITE MEMORY 
-   WriteSpiCommand(RAMWR); 
+  // Column address set (command 0x2A) 
+  WriteSpiCommand(CASET); 
+  WriteSpiData(y); 
+  WriteSpiData(y + nCols - 1); 
 
-   // The LCD factory fonts are stored upside down, so we can step
-   // forward through the rows and still from bottom to top...
+  // WRITE MEMORY 
+  WriteSpiCommand(RAMWR); 
 
-   // loop on each row, working backwards from the bottom to the top 
-   for (i = 0; i < nRows; i++ ) { 
+  // The LCD factory fonts are stored upside down, so we can step
+  // forward through the rows and still from bottom to top...
 
-     // loop on each pixel in the row (left to right) 
-     // Note: we do two pixels each loop 
-     Mask = 0x80; 
-     for (j = 0; j < nCols; j += 2)  
-     { 
-       // if pixel bit set, use foreground color; else use the background color 
-       // now get the pixel color for two successive pixels 
-       if ((*pChar & Mask) == 0) 
-         Word0 = bColor; 
-       else 
-         Word0 = fColor; 
-       Mask = Mask >> 1; 
+  // loop on each row, working backwards from the bottom to the top 
+  for (i = 0; i < nRows; i++ ) { 
 
-       if ((*pChar & Mask) == 0) 
-         Word1 = bColor; 
-       else 
-         Word1 = fColor; 
-       Mask = Mask >> 1; 
+    // loop on each pixel in the row (left to right) 
+    // Note: we do two pixels each loop 
+    Mask = 0x80; 
+    for (j = 0; j < nCols; j += 2)  
+    { 
+      // if pixel bit set, use foreground color; else use the background color 
+      // now get the pixel color for two successive pixels 
+      if ((*pChar & Mask) == 0) 
+        Word0 = bColor; 
+      else 
+        Word0 = fColor; 
+      Mask = Mask >> 1; 
 
-       // use this information to output three data bytes 
-       WriteSpiData((Word0 >> 4) & 0xFF); 
-       WriteSpiData(((Word0 & 0xF) << 4) | ((Word1 >> 8) & 0xF)); 
-       WriteSpiData(Word1 & 0xFF); 
+      if ((*pChar & Mask) == 0) 
+        Word1 = bColor; 
+      else 
+        Word1 = fColor; 
+      Mask = Mask >> 1; 
 
-       if( Mask == 0 ) {
-         Mask = 0x80;
-pChar++;
-       }
-     } 
-   } 
+      // use this information to output three data bytes 
+      WriteSpiData((Word0 >> 4) & 0xFF); 
+      WriteSpiData(((Word0 & 0xF) << 4) | ((Word1 >> 8) & 0xF)); 
+      WriteSpiData(Word1 & 0xFF); 
+
+      if( Mask == 0 ) {
+        Mask = 0x80;
+        pChar++;
+      }
+    } 
+  } 
 
 
   // terminate the Write Memory command 
   WriteSpiCommand(NOP); 
 
+  return nCols;
 } 
  
 // ************************************************************************************************* 
@@ -780,21 +782,19 @@ pChar++;
 // ************************************************************************************************* 
 void LCDPutStr(const char *pString, int x, int y, int Size, int fColor, int bColor)  
 { 
+  int c_width;
+
   // loop until null-terminator is seen 
   while (*pString != 0x00)  
   { 
     // draw the character 
-    LCDPutChar(*pString++, x, y, Size, fColor, bColor); 
- 
-    // advance the y position 
-    if (Size == SMALL) 
-      y = y + 6; 
-    else if (Size == MEDIUM) 
-      y = y + 8; 
-    else if (Size == LARGE )
-      y = y + 8; 
-    else
-      y += 40;
+    c_width = LCDPutChar(*pString++, x, y, Size, fColor, bColor); 
+
+    if( c_width < 0 ) {
+      // take action
+    } 
+
+    y += c_width;
  
     // bail out if y exceeds 131 
     if (y > 131) break; 
