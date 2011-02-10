@@ -5,6 +5,11 @@
 
 #include <stdint.h>
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // ==========================================================================
 // structure definition
 // ==========================================================================
@@ -32,11 +37,23 @@ typedef struct
 
 #include "fonts/huge.h"
 
+// Font sizes 
+#define SMALL 0 
+#define MEDIUM 1 
+#define LARGE 2 
+#define HUGE  3
+ 
 typedef enum {
-  HUGE_Font = 0
+  SMALL_font = 0,
+  MEDIUM_font = 1,
+  LARGE_font = 2,
+  HUGE_font = 4
 } font_size_t;
 
 
 extern const FONT_INFO *font_table[];
 
+#ifdef __cplusplus
+}
+#endif
 #endif

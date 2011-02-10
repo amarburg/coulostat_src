@@ -55,12 +55,7 @@
 #define ORANGE 0xFA0 
 #define PINK 0xF6A 
  
-// Font sizes 
-#define SMALL 0 
-#define MEDIUM 1 
-#define LARGE 2 
-#define HUGE  3
- 
+
 // Define LCD-NOKIA6610 PinIO Interface Mask Bit  
  
 // End of Define For LCD-NOKIA6610 

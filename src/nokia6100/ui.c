@@ -4,6 +4,8 @@
 #include "ui.h"
 #include "buttons.h"
 
+#include "fonts.h"
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>

@@ -15,6 +15,7 @@
 #include "buttons.h"
 
 #include "ui.h"
+#include "fonts.h"
 
 #define LED_PIN 13
 #define PWM_PIN  2
