@@ -1,4 +1,7 @@
-
+//
+// These are the original font files from Jim Lynch's LCD tutorial
+// The script 'convert.rb' was used to re-conbobulate the arrays to
+// match the LCD Factory format, which are now stored in lynch_fonts.c
 
 
 const unsigned char FONT6x8[97][8] = { 

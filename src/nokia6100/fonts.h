@@ -35,19 +35,19 @@ typedef struct
 
 } FONT_INFO;	
 
-#include "fonts/huge.h"
-
 // Font sizes 
-#define SMALL 0 
+#define SMALL  0 
 #define MEDIUM 1 
-#define LARGE 2 
-#define HUGE  3
+#define LARGE  2 
+#define SS30PT   3
+#define SS59PT   4
  
 typedef enum {
   SMALL_font = 0,
   MEDIUM_font = 1,
   LARGE_font = 2,
-  HUGE_font = 4
+  SS30PT_font  = 3,
+  SS59PT_font  = 4
 } font_size_t;
 
 

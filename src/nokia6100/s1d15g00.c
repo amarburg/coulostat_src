@@ -112,12 +112,14 @@
 extern void delay( unsigned long ms );
 /*== End user-configurable bits ==*/
 
+#include "term_io.h"
+ 
 #include "s1d15g00.h"
 
 #include "fonts.h"
 // Provides ASSERT(..)
 #include <util.h>
- 
+
 #define DISON 0xAF // Display on 
 #define DISOFF 0xAE // Display off 
 #define DISNOR 0xA6 // Normal display 
@@ -688,13 +690,13 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
   const FONT_INFO *font = font_table[size];
 
   offset_char = c - font->startChar;
-  if( (offset_char < 0) || (offset_char > font->endChar) ) return;
-  if( font->charInfo[offset_char].width == 0 ) return;
+  if( (offset_char < 0) || (offset_char > font->endChar) ) return -1;
+  if( font->charInfo[offset_char].width == 0 ) return -1;
 
   nRows = font->charInfo[offset_char].height;
   nCols = font->charInfo[offset_char].width;
 
-  ASSERT(  font->charInfo[offset_char].offset > 0 );
+  ASSERT( font->charInfo[offset_char].offset >= 0 );
   pChar = &(font->data[ font->charInfo[offset_char].offset ]);
 
   // TODO: Catch clipping.  Slightly more complicated because
@@ -712,11 +714,11 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
     stopRow = LCD_HEIGHT-x;
     if( stopRow <= 0 ) return -1;
   }
-  
+
   // Row address set (command 0x2B) 
   WriteSpiCommand(PASET); 
   WriteSpiData(x); 
-  WriteSpiData(x + nRows - 1); 
+  WriteSpiData(x + nRows - 1 ); 
 
   // Column address set (command 0x2A) 
   WriteSpiCommand(CASET); 
@@ -728,6 +730,32 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
 
   // The LCD factory fonts are stored upside down, so we can step
   // forward through the rows and still from bottom to top...
+
+  // In inverted page (row) addressing mode, I think it's starting from
+  // row 0 (the top row as far as the font is concerned) but still wrapping
+  // through memory in the non-inverted positive direction -- that's "up"
+  // or "negative" in the inverted frame of reference.
+  // So it's writing the _top_ row of the font then wrapping around 
+  // and starting at the bottom.
+  // The "right" way is to flip the LCD around.  The wrong way (as 
+  // shown here is to push out a blank row first
+  // Another option would be to shift all of the rows in the font by one
+  // but that would be hard to undo...
+#define LCD_INVERTED_FIRST_ROW_HACK
+#ifdef  LCD_INVERTED_FIRST_ROW_HACK
+  for (j = 0; j < nCols; j += 2)  
+  { 
+    if( (j < stopCol) && (i < stopRow)  ) {
+
+      Word0 = bColor; 
+      Word1 = bColor; 
+
+      WriteSpiData((Word0 >> 4) & 0xFF); 
+      WriteSpiData(((Word0 & 0xF) << 4) | ((Word1 >> 8) & 0xF)); 
+      WriteSpiData(Word1 & 0xFF); 
+    }
+  } 
+#endif
 
   // loop on each row, working backwards from the bottom to the top 
   for (i = 0; i < nRows; i++ ) { 
@@ -813,13 +841,16 @@ void LCDPutStr(const char *pString, int x, int y, int Size, int fColor, int bCol
     c_width = LCDPutChar(*pString++, x, y, Size, fColor, bColor); 
 
     if( c_width < 0 ) {
+      debug_println("Error printing \"");
+      debug_putc( *(pString-1) );
+      debug_println("\"");
       // take action
     } 
 
     y += c_width;
  
     // bail out if y exceeds 131 
-    if (y > 131) break; 
+    if (y > LCD_WIDTH) break; 
   } 
 } 
 

@@ -3,7 +3,7 @@
 */
 
 /* Character bitmaps for Microsoft Sans Serif 59pt */
-const unsigned char BIGFONT[] = 
+const unsigned char microsoftSansSerif59pt[] = 
 {
 	/* @0 '+' (40 pixels wide) */
 	0x00, 0x00, 0x00, 0x00, 0x00, /*                                          */
@@ -801,7 +801,7 @@ const unsigned char BIGFONT[] =
 
 /* Character descriptors for Microsoft Sans Serif 59pt */
 /* { [Char width in bits], [Char height in bits], [Offset into microsoftSansSerif59ptCharBitmaps in bytes] } */
-const FONT_CHAR_INFO BIGFONT_Descriptors[] =
+const FONT_CHAR_INFO microsoftSansSerif59pt_Descriptors[] =
 {
 	{40, 59, 0}, 		/* + */
 	{0, 0, 0}, 		/* , */
@@ -821,12 +821,12 @@ const FONT_CHAR_INFO BIGFONT_Descriptors[] =
 };
 
 /* Font information for Microsoft Sans Serif 59pt */
-const FONT_INFO BIGFONT_Info =
+const FONT_INFO microsoftSansSerif59pt_Info =
 {
 	8, /*  Character height */
 	'+', /*  Start character */
 	'9', /*  End character */
 	2, /*  Width, in pixels, of space character */
-	BIGFONT_Descriptors, /*  Character decriptor array */
-	BIGFONT, /*  Character bitmap array */
+	microsoftSansSerif59pt_Descriptors, /*  Character decriptor array */
+	microsoftSansSerif59pt, /*  Character bitmap array */
 };

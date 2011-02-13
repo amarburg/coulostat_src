@@ -10,9 +10,10 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "s1d15g00.h"
 #include "libmaple.h"
+#include "term_io.h"
 #include "util.h"
+#include "s1d15g00.h"
 
 typedef enum ui_state {
   DO_FULL_MENU,
@@ -132,6 +133,7 @@ void refresh_menu( unsigned int keys )
   if( keys & BTN_DOWN ) {
     if( current_item->next != NULL )  {
       current_item = current_item->next;
+        do_redraw = true;
 
       // If the span between top of screen item and the current item is too large, scroll down
 
@@ -144,7 +146,6 @@ void refresh_menu( unsigned int keys )
 
       if( item_count > num_items() - 1 ) {
         top_of_screen_item = top_of_screen_item->next;
-        do_redraw = true;
       }
     }
   } else if( keys & BTN_UP ) {
@@ -152,12 +153,12 @@ void refresh_menu( unsigned int keys )
     tmp = current_menu;
     if( current_item != current_menu ) {
       while( (tmp != NULL) && (tmp->next != current_item) ) tmp = tmp->next;
+        do_redraw = true;
 
       ASSERT( tmp->next == current_item );
 
       if( current_item ==  top_of_screen_item ) { 
         top_of_screen_item = tmp;
-        do_redraw = true;
       }
 
       current_item = tmp;
@@ -192,8 +193,6 @@ void refresh_menu( unsigned int keys )
 
   if( do_redraw == true ) {
     LCDSetRect(y_offset,0,132,132,FILL,MENU_BG);
-  }
-
 
   this_item = top_of_screen_item;
 
@@ -201,12 +200,13 @@ void refresh_menu( unsigned int keys )
   for( ; (i < num_items()) && this_item != NULL; i++ ) {
 
     if( this_item == current_item ) 
-      LCDPutStr( this_item->text, y_offset,MENU_X, MENU_FONT, MENU_HIGHLIGHT_FG, MENU_HIGHLIGHT_BG );
+      LCDPutStr( this_item->text, y_offset, MENU_X, MENU_FONT, MENU_HIGHLIGHT_FG, MENU_HIGHLIGHT_BG );
     else
       LCDPutStr( this_item->text, y_offset, MENU_X, MENU_FONT, MENU_FG, MENU_BG );
 
     y_offset += LINE_HEIGHT;
     this_item = this_item->next;
+  }
   }
 
   do_redraw = false;

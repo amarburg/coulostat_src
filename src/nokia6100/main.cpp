@@ -6,10 +6,13 @@
 //  for a list of commands.
 
 #include "wirish.h"
+
 #include "my_systick.h"
 #include "main.h"
 #include "nokia6100.h"
 #include "s1d15g00.h"
+
+#include "term_io.h"
 
 #include "sd_power.h"
 #include "buttons.h"
@@ -19,10 +22,6 @@
 
 #define LED_PIN 13
 #define PWM_PIN  2
-
-// choose your weapon
-#define COMM SerialUSB
-//#define COMM Serial2
 
 uint8 input = 0;
 uint8 tiddle = 0;
@@ -81,29 +80,30 @@ void setup() {
   LCDClearScreen();
   LCDSetRect(0,0,132,132,FILL,BLACK);
 
-  LCDPutChar('1', 0,0, HUGE, RED, BLACK );
-  LCDPutStr( "06", 60,0, HUGE, YELLOW,BLACK );
+  //LCDPutChar('1', 0,0, SS59PT, RED, BLACK );
+  LCDPutStr( "123456", 4,0, SS30PT, RED, BLACK );
+  LCDPutStr( "LARGE", 60,0, LARGE, YELLOW,BLACK );
+  LCDPutStr( "MEDIUM", 80,0, MEDIUM, YELLOW,BLACK );
+  LCDPutStr( "SMALL", 100,0, SMALL, YELLOW,BLACK );
+  
   // For 16x8 font, should get 8 rows and 16 columns
   //for( row = 0; row < 8; row++ )
   //  for( col = 0; col < 16; col++ )
   //    LCDPutChar( 'a' + col, 16*row,8*col, LARGE,BLACK,YELLOW);
   //
-  Serial1.println("Finished with init");
+  Serial1.println("Finished with setup");
 }
 
 void loop() {
   static uint8 addr = 0;
+  static uint8_t bar_color = 0;
 
   toggle ^= 1;
   digitalWrite(LED_PIN, toggle);
 
-  LCDSetPixel( 20,addr, RED ); 
+  LCDSetPixel( 0,addr, bar_color ? RED : GREEN ); 
   addr++;
-  if( addr > 131 ) { addr = 0; }
-
-  LCDPutStr("HELP!", 80,20, SMALL, BLACK, YELLOW);
-
-  LCDSetRect( 90, 70, 75, 120, FILL, YELLOW );
+  if( addr > 131 ) { addr = 0; bar_color ^= 1; }
 
   delay(100);
 
@@ -133,59 +133,59 @@ void loop() {
         delay(5000);
         break;
       case 'p':
-                COMM.println("Toggling SD card power ...");
-                if( sd_chk_power() == true ) 
-                  COMM.println("SD power is on, turning off" );
-                else
-                  COMM.println("SD power is off, turning on" );
-                 sd_toggle_power();
-                 /* Wait for settling */
-                 delay(100);
-                if( sd_chk_power() == true ) 
-                  COMM.println("SD power is on");
-                else
-                  COMM.println("SD power is off");
-               break;
-            case 114:  // 'r'
-                COMM.println("Monitoring GPIO read state changes. Press enter.");
-                // turn off LED
-                digitalWrite(LED_PIN, 0);
-                // make sure to skip the TX/RX headers
-                for(int i = 2; i<NUM_GPIO; i++) {
-                    pinMode(i, INPUT_PULLDOWN);
-                    gpio_state[i] = (uint8)digitalRead(i);
-                }
-                while(!COMM.available()) { 
-                    for(int i = 2; i<NUM_GPIO; i++) {
-                        tiddle = (uint8)digitalRead(i);
-                        if(tiddle != gpio_state[i]) {
-                            COMM.print("State change on header D");
-                            COMM.print(i,DEC);
-                            if(tiddle) COMM.println(":\tHIGH");
-                            else COMM.println(":\tLOW");
-                            gpio_state[i] = tiddle;
-                        }
-                    }
-                }
-                for(int i = 2; i<NUM_GPIO; i++) {
-                    pinMode(i, OUTPUT);
-                }
-                break;
-            default:
-                COMM.print("Unexpected: ");
-                COMM.println(input);
+        COMM.println("Toggling SD card power ...");
+        if( sd_chk_power() == true ) 
+          COMM.println("SD power is on, turning off" );
+        else
+          COMM.println("SD power is off, turning on" );
+        sd_toggle_power();
+        /* Wait for settling */
+        delay(100);
+        if( sd_chk_power() == true ) 
+          COMM.println("SD power is on");
+        else
+          COMM.println("SD power is off");
+        break;
+      case 114:  // 'r'
+        COMM.println("Monitoring GPIO read state changes. Press enter.");
+        // turn off LED
+        digitalWrite(LED_PIN, 0);
+        // make sure to skip the TX/RX headers
+        for(int i = 2; i<NUM_GPIO; i++) {
+          pinMode(i, INPUT_PULLDOWN);
+          gpio_state[i] = (uint8)digitalRead(i);
         }
-        COMM.print("> ");
+        while(!COMM.available()) { 
+          for(int i = 2; i<NUM_GPIO; i++) {
+            tiddle = (uint8)digitalRead(i);
+            if(tiddle != gpio_state[i]) {
+              COMM.print("State change on header D");
+              COMM.print(i,DEC);
+              if(tiddle) COMM.println(":\tHIGH");
+              else COMM.println(":\tLOW");
+              gpio_state[i] = tiddle;
+            }
+          }
+        }
+        for(int i = 2; i<NUM_GPIO; i++) {
+          pinMode(i, OUTPUT);
+        }
+        break;
+      default:
+        COMM.print("Unexpected: ");
+        COMM.println(input);
     }
+    COMM.print("> ");
+  }
 }
 
 void print_help(void) {
-    COMM.println("");
-    //COMM.println("Command Listing\t(# means any digit)");
-    COMM.println("Command Listing");
-    COMM.println("\t?: print this menu");
-    COMM.println("\th: print this menu");
-    COMM.println("\tw: print Hello World on all 3 USARTS");
+  COMM.println("");
+  //COMM.println("Command Listing\t(# means any digit)");
+  COMM.println("Command Listing");
+  COMM.println("\t?: print this menu");
+  COMM.println("\th: print this menu");
+  COMM.println("\tw: print Hello World on all 3 USARTS");
 }
 
 static inline void key_press_debug( unsigned char keys )
@@ -203,32 +203,32 @@ static inline void key_press_debug( unsigned char keys )
 
 // Force init to be called *first*, i.e. before static object allocation.
 // Otherwise, statically allocated object that need libmaple may fail.
- __attribute__(( constructor )) void premain() {
-    init();
+__attribute__(( constructor )) void premain() {
+  init();
 }
 
 int main(void)
 {
   unsigned char keys;
-    setup();
+  setup();
 
-    while (1) {
-        loop();
+  while (1) {
+    loop();
 
-        keys = button_get_keypress( BTN_ALL );
-        //Serial1.print(get_systick_count());
-        //Serial1.print(' ');
-        //Serial1.print(get_key_state());
-        //Serial1.print(' ');
-        //Serial1.println(keys+'a');
+    keys = button_get_keypress( BTN_ALL );
+    //Serial1.print(get_systick_count());
+    //Serial1.print(' ');
+    //Serial1.print(get_key_state());
+    //Serial1.print(' ');
+    //Serial1.println(keys+'a');
 
-        key_press_debug( keys );
+    key_press_debug( keys );
 
-        switch( app_state ) {
-          case DO_MENU:
-            refresh_ui( keys );
-            break;
-        }
+    switch( app_state ) {
+      case DO_MENU:
+        refresh_ui( keys );
+        break;
     }
-    return 0;
+  }
+  return 0;
 }

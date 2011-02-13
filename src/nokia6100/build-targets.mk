@@ -4,7 +4,8 @@ PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o \
 	       $(BUILD_PATH)/sd_power.o \
 	       $(BUILD_PATH)/my_systick.o \
 	       $(BUILD_PATH)/buttons.o \
-	       $(BUILD_PATH)/fonts.o
+	       $(BUILD_PATH)/fonts.o \
+	       $(BUILD_PATH)/term_io.o
 
 CFLAGS += -DUSER_PROVIDES_SYSTICK_HANDLER
 
@@ -13,6 +14,9 @@ CFLAGS += -DUSER_PROVIDES_SYSTICK_HANDLER
 $(BUILD_PATH)/%.o: %.c
 	$(SILENT_CC) $(CC) $(CFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
 	
+$(BUILD_PATH)/%.o: %.cpp
+	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+
 # main project target
 $(BUILD_PATH)/main.o: main.cpp 
 	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES) -o $@ -c $< 
