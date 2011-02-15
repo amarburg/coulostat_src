@@ -35,7 +35,7 @@
 #include "adc.h"
 
 volatile bool reference2_adc_updated = false;
-int32_t reference2_adc = 0;
+volatile int32_t reference2_adc = -1000;
 
 #define INTERNAL_ADC_PORT  GPIOA_BASE
 #define INTERNAL_V_PIN     0          // Pin PA0 is ADC0, Maple pin 2, 
@@ -55,6 +55,10 @@ void init_adc( void )
    
    gpio_set_mode( INTERNAL_ADC_PORT, INTERNAL_V_PIN, GPIO_MODE_INPUT_ANALOG );
    gpio_set_mode( INTERNAL_ADC_PORT, INTERNAL_I_PIN, GPIO_MODE_INPUT_ANALOG );
-   
 }
 
+void take_periodic_adc( void )
+{
+  reference2_adc++;
+  reference2_adc_updated = true;
+}

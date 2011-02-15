@@ -37,13 +37,16 @@
 
 #define REFERENCE_SCALER 0.001
 extern volatile bool reference2_adc_updated; 
-extern int32_t reference2_adc;
+extern volatile int32_t reference2_adc;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
   void init_adc( void );
+
+  // Will be called from IRQs (systick handler, mostly)
+  void take_periodic_adc( void );
 
 #ifdef __cplusplus
 }

@@ -43,7 +43,7 @@ uint8 gpio_state[NUM_GPIO];
 void print_help(void);
 
 
-big_state_t current_app_state;
+big_state_t current_app_state = DO_HALF_MENU;
 
 
 void setup() {
@@ -83,12 +83,6 @@ void setup() {
   LCDClearScreen();
   LCDSetRect(0,0,132,132,FILL,BLACK);
 
-  //LCDPutChar('1', 0,0, SS59PT, RED, BLACK );
-  LCDPutStr( "123456", 4,0, SS30PT, RED, BLACK );
-  LCDPutStr( "LARGE", 60,0, LARGE, YELLOW,BLACK );
-  LCDPutStr( "MEDIUM", 80,0, MEDIUM, YELLOW,BLACK );
-  LCDPutStr( "SMALL", 100,0, SMALL, YELLOW,BLACK );
-  
   // For 16x8 font, should get 8 rows and 16 columns
   //for( row = 0; row < 8; row++ )
   //  for( col = 0; col < 16; col++ )

@@ -12,8 +12,7 @@ void SysTickHandler(void) {
   if( (systick_count % 50) == 0 ) button_debounce_timerproc();
 
   if( (systick_count % 250) == 0 ) {
-    reference2_adc++;
-    reference2_adc_updated = true;
+    take_periodic_adc();
   }
 
   systick_count++;
