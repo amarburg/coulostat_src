@@ -1,20 +1,25 @@
 PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o \
 	       $(BUILD_PATH)/s1d15g00.o \
 	       $(BUILD_PATH)/ui.o \
+	       $(BUILD_PATH)/ui/file_browser.o \
+	       $(BUILD_PATH)/ui/menu.o \
+	       $(BUILD_PATH)/ui/info.o \
 	       $(BUILD_PATH)/sd_power.o \
 	       $(BUILD_PATH)/my_systick.o \
 	       $(BUILD_PATH)/buttons.o \
 	       $(BUILD_PATH)/fonts.o \
 	       $(BUILD_PATH)/term_io.o
 
-CFLAGS += -DUSER_PROVIDES_SYSTICK_HANDLER
+CFLAGS += -I. -DUSER_PROVIDES_SYSTICK_HANDLER
 
 # I believe this overrides a maple-provided rule
 # 
 $(BUILD_PATH)/%.o: %.c
+	@mkdir -p $(dir $(@:%.o=%.d))
 	$(SILENT_CC) $(CC) $(CFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
 	
 $(BUILD_PATH)/%.o: %.cpp
+	@mkdir -p $(dir $(@:%.o=%.d))
 	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
 
 # main project target
