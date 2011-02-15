@@ -19,9 +19,15 @@
 #define LINE_HEIGHT 16
 #define MENU_X 0
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void refresh_menu( unsigned int keys );
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

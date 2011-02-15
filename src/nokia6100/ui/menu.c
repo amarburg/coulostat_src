@@ -2,11 +2,9 @@
 #include <stdlib.h>
 #include "s1d15g00.h"
 #include "fonts.h"
-#include "ui.h"
-#include "ui/menu.h"
 
-#include "ui/info.h"
-#include "ui/file_browser.h"
+#include "main.h"
+#include "ui.h"
 
 #include "buttons.h"
 
@@ -80,20 +78,24 @@ static const menu_item_t *current_item = &root_item1,
 
 static int num_items( void )
 {
-  switch( current_ui_state ) {
+  switch( current_app_state ) {
     case FILE_BROWSER:
-  case DO_FULL_MENU: return FULL_MENU_NUM_ITEMS;
-  case DO_HALF_MENU: return HALF_MENU_NUM_ITEMS;
+    case DO_FULL_MENU: return FULL_MENU_NUM_ITEMS;
+                       break;
+    case DO_HALF_MENU: return HALF_MENU_NUM_ITEMS;
+                       break;
   }
   return FULL_MENU_NUM_ITEMS;
 }
 
 static inline int get_y_offset( void )
 {
-  switch( current_ui_state ) {
+  switch( current_app_state ) {
     case FILE_BROWSER:
-  case DO_FULL_MENU: return FULL_MENU_YOFFSET;
-  case DO_HALF_MENU: return HALF_MENU_YOFFSET;
+    case DO_FULL_MENU: return FULL_MENU_YOFFSET;
+                       break;
+    case DO_HALF_MENU: return HALF_MENU_YOFFSET;
+                       break;
   }
   return FULL_MENU_YOFFSET;
 }
@@ -163,26 +165,24 @@ void refresh_menu( unsigned int keys )
     }
   }
 
-  if( current_ui_state == DO_HALF_MENU ) {
-    y_offset = get_y_offset();
-  }
+  y_offset = get_y_offset();
 
   if( do_redraw == true ) {
     LCDSetRect(y_offset,0,132,132,FILL,MENU_BG);
 
-  this_item = top_of_screen_item;
+    this_item = top_of_screen_item;
 
-  ASSERT( this_item != NULL );
-  for( ; (i < num_items()) && this_item != NULL; i++ ) {
+    ASSERT( this_item != NULL );
+    for( ; (i < num_items()) && this_item != NULL; i++ ) {
 
-    if( this_item == current_item ) 
-      LCDPutStr( this_item->text, y_offset, MENU_X, MENU_FONT, MENU_HIGHLIGHT_FG, MENU_HIGHLIGHT_BG );
-    else
-      LCDPutStr( this_item->text, y_offset, MENU_X, MENU_FONT, MENU_FG, MENU_BG );
+      if( this_item == current_item ) 
+        LCDPutStr( this_item->text, y_offset, MENU_X, MENU_FONT, MENU_HIGHLIGHT_FG, MENU_HIGHLIGHT_BG );
+      else
+        LCDPutStr( this_item->text, y_offset, MENU_X, MENU_FONT, MENU_FG, MENU_BG );
 
-    y_offset += LINE_HEIGHT;
-    this_item = this_item->next;
-  }
+      y_offset += LINE_HEIGHT;
+      this_item = this_item->next;
+    }
   }
 
   do_redraw = false;

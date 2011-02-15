@@ -7,13 +7,14 @@
 extern "C" {
 #endif
 
-typedef enum big_state_enum {
-  DO_MENU
-} big_state_enum_t;
+  typedef enum big_state_enum {
+    DO_FULL_MENU,
+    DO_HALF_MENU,
+    INFO_SCREEN,
+    FILE_BROWSER
+  } big_state_t;
 
-// Yes, it's a big fat global.
-extern big_state_enum_t app_state;
-
+  extern big_state_t current_app_state;
 
 #ifdef __cplusplus
 }

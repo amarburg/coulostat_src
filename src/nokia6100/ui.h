@@ -4,30 +4,31 @@
 
 #include <stdbool.h>
 
+#include "fonts.h"
+#include "s1d15g00.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+  // This is shared between a couple of modes (menus, 
+  // file browser)
 typedef struct menu_item {
   const char *text;
   bool (*enter_callback)( const struct menu_item *item );
   const struct menu_item *next, *enter;
 } menu_item_t;
 
-  typedef enum ui_state {
-    DO_FULL_MENU,
-    DO_HALF_MENU,
-    INFO_SCREEN,
-    FILE_BROWSER
-  } ui_state_t;
-
-  extern ui_state_t current_ui_state;
-  extern bool do_redraw;
-
-  void refresh_ui( unsigned int keys );
+ extern bool do_redraw;
 
 #ifdef __cplusplus
 }
 #endif
+
+#include "ui/info.h"
+#include "ui/menu.h"
+#include "ui/file_browser.h"
+#include "ui/adc.h"
+
 
 #endif

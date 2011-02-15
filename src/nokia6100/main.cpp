@@ -16,8 +16,10 @@
 
 #include "sd_power.h"
 #include "buttons.h"
+#include "my_adc.h"
 
 #include "ui.h"
+
 #include "fonts.h"
 
 #define LED_PIN 13
@@ -41,11 +43,12 @@ uint8 gpio_state[NUM_GPIO];
 void print_help(void);
 
 
-big_state_enum_t app_state;
+big_state_t current_app_state;
 
 
 void setup() {
-  //int row = 0, col=0;
+
+  init_adc();
   
   /* Set up the LED to blink  */
   pinMode(LED_PIN, OUTPUT);
@@ -224,11 +227,20 @@ int main(void)
 
     key_press_debug( keys );
 
-    switch( app_state ) {
-      case DO_MENU:
-        refresh_ui( keys );
+    switch( current_app_state ) {
+      case DO_HALF_MENU:
+        draw_adc();
+      case DO_FULL_MENU:
+      case FILE_BROWSER:
+        refresh_menu( keys);
+        break;
+      case INFO_SCREEN:
+        draw_info_screen( keys);
         break;
     }
+
+    reference2_adc_updated = false;
+
   }
   return 0;
 }

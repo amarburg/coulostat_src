@@ -1,9 +1,11 @@
 PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o \
 	       $(BUILD_PATH)/s1d15g00.o \
+	       $(BUILD_PATH)/my_adc.o \
 	       $(BUILD_PATH)/ui.o \
 	       $(BUILD_PATH)/ui/file_browser.o \
 	       $(BUILD_PATH)/ui/menu.o \
 	       $(BUILD_PATH)/ui/info.o \
+	       $(BUILD_PATH)/ui/adc.o \
 	       $(BUILD_PATH)/sd_power.o \
 	       $(BUILD_PATH)/my_systick.o \
 	       $(BUILD_PATH)/buttons.o \
