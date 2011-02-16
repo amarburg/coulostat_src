@@ -3,8 +3,6 @@
 #ifndef __TERM_IO_H__
 #define __TERM_IO_H__
 
-#include "wirish.h"
-
 #define COMM SerialUSB
 #define DEBUG Serial1
 
