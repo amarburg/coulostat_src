@@ -691,9 +691,9 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
 
   // Space is a special case
   if( c == ' ' ) {
-    LCDSetRect( x, x+font->heightPixels,
-                y, y+font->spacePixels,
-                FILL, bColor );
+    LCDSetRect( x, y, 
+        x+font->heightPixels, y+font->spacePixels,
+        FILL, bColor );
     return font->spacePixels;
   }
 
