@@ -436,7 +436,7 @@ const FONT_INFO microsoftSansSerif30pt_Info =
 	29, /*  Character height */
 	'+', /*  Start character */
 	'9', /*  End character */
-	2, /*  Width, in pixels, of space character */
+	20, /*  Width, in pixels, of space character */
 	microsoftSansSerif30pt_Descriptors, /*  Character decriptor array */
 	microsoftSansSerif30pt, /*  Character bitmap array */
 };
