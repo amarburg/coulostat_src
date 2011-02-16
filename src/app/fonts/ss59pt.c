@@ -823,10 +823,10 @@ const FONT_CHAR_INFO microsoftSansSerif59pt_Descriptors[] =
 /* Font information for Microsoft Sans Serif 59pt */
 const FONT_INFO microsoftSansSerif59pt_Info =
 {
-	8, /*  Character height */
+	59, /*  Character height */
 	'+', /*  Start character */
 	'9', /*  End character */
-	2, /*  Width, in pixels, of space character */
+	10, /*  Width, in pixels, of space character */
 	microsoftSansSerif59pt_Descriptors, /*  Character decriptor array */
 	microsoftSansSerif59pt, /*  Character bitmap array */
 };

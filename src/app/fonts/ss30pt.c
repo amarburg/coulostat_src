@@ -433,7 +433,7 @@ const FONT_CHAR_INFO microsoftSansSerif30pt_Descriptors[] =
 /* Font information for Microsoft Sans Serif 30pt */
 const FONT_INFO microsoftSansSerif30pt_Info =
 {
-	4, /*  Character height */
+	29, /*  Character height */
 	'+', /*  Start character */
 	'9', /*  End character */
 	2, /*  Width, in pixels, of space character */

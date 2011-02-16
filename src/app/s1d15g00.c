@@ -689,6 +689,14 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
   char this_byte;
   const FONT_INFO *font = font_table[size];
 
+  // Space is a special case
+  if( c == ' ' ) {
+    LCDSetRect( x, x+font->heightPixels,
+                y, y+font->spacePixels,
+                FILL, bColor );
+    return font->spacePixels;
+  }
+
   offset_char = c - font->startChar;
   if( (offset_char < 0) || (offset_char > font->endChar) ) return -1;
   if( font->charInfo[offset_char].width == 0 ) return -1;

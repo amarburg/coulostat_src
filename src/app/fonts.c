@@ -6,6 +6,7 @@
 // LCD Factory
 
 #include "fonts/lynch_fonts.c"
+//#include "fonts/ss30pt-variablepitch.c"
 #include "fonts/ss30pt.c"
 #include "fonts/ss59pt.c"
 

@@ -201,7 +201,7 @@ const FONT_CHAR_INFO FONT6x8_Descriptors[] =
 
 const FONT_INFO FONT6x8_Info =
 {
-  1, /*  Character height in bytes */
+  8, /*  Character height in bytes */
   ' ', /*  Start character */
   127, /*  End character */
   6, /*  Width, in pixels, of space character */
@@ -410,7 +410,7 @@ const FONT_CHAR_INFO FONT8x8_Descriptors[] =
 
 const FONT_INFO FONT8x8_Info =
 {
-  1, /*  Character height in bytes */
+  8, /*  Character height in bytes */
   ' ', /*  Start character */
   127, /*  End character */
   8, /*  Width, in pixels, of space character */
@@ -619,7 +619,7 @@ const FONT_CHAR_INFO FONT8x16_Descriptors[] =
 
 const FONT_INFO FONT8x16_Info =
 {
-  2, /*  Character height in bytes */
+  16, /*  Character height in bytes */
   ' ', /*  Start character */
   127, /*  End character */
   8, /*  Width, in pixels, of space character */
