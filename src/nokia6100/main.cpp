@@ -45,6 +45,9 @@ void print_help(void);
 
 big_state_t current_app_state = DO_HALF_MENU;
 
+// Not entirely happy with dedicating a variable to this.  Don't need to do 
+// this if I take over the init function.
+bool init_complete = false;
 
 void setup() {
 
@@ -89,6 +92,7 @@ void setup() {
   //    LCDPutChar( 'a' + col, 16*row,8*col, LARGE,BLACK,YELLOW);
   //
   Serial1.println("Finished with setup");
+  init_complete = true;
 }
 
 void loop() {
@@ -233,6 +237,7 @@ int main(void)
         break;
     }
 
+    internal_updated = false;
     reference2_adc_updated = false;
 
   }

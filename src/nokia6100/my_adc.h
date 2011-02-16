@@ -39,6 +39,10 @@
 extern volatile bool reference2_adc_updated; 
 extern volatile int32_t reference2_adc;
 
+extern volatile bool internal_updated;
+extern volatile int16_t internal_v_adc;
+extern volatile int16_t internal_i_adc;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

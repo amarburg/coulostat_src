@@ -2,6 +2,7 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,6 +16,8 @@ extern "C" {
   } big_state_t;
 
   extern big_state_t current_app_state;
+
+  extern bool init_complete;
 
 #ifdef __cplusplus
 }

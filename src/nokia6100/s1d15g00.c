@@ -707,12 +707,18 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
    stopCol = LCD_WIDTH-y;
    if( stopCol % 2 !=0 ) stopCol--;
    if( stopCol <= 0 ) return -1;
+
+   // For now, just don't clip
+   if( stopCol < nCols ) return -1;
   }
 
   stopRow = nRows;
   if( (x+nRows) > LCD_HEIGHT ) {
     stopRow = LCD_HEIGHT-x;
     if( stopRow <= 0 ) return -1;
+    
+   // For now, just don't clip
+   if( stopRow < nRows ) return -1;
   }
 
   // Row address set (command 0x2B) 
@@ -789,6 +795,8 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
         WriteSpiData((Word0 >> 4) & 0xFF); 
         WriteSpiData(((Word0 & 0xF) << 4) | ((Word1 >> 8) & 0xF)); 
         WriteSpiData(Word1 & 0xFF); 
+      } else {
+        Mask >>= 2;
       }
 
       if( Mask == 0 ) {
@@ -841,9 +849,9 @@ void LCDPutStr(const char *pString, int x, int y, int Size, int fColor, int bCol
     c_width = LCDPutChar(*pString++, x, y, Size, fColor, bColor); 
 
     if( c_width < 0 ) {
-      debug_println("Error printing \"");
-      debug_putc( *(pString-1) );
-      debug_println("\"");
+//      debug_print("LCD error printing \"");
+//      debug_putc( *(pString-1) );
+//      debug_println("\"");
       // take action
     } 
 

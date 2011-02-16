@@ -3,6 +3,10 @@
 #include "term_io.h"
 
 // Compatibility wrappers with Martin Thomas' term_io functions for now
+void debug_print( const char *c )
+{
+  DEBUG.print(c);
+}
 void debug_println( const char *c )
 {
   DEBUG.println(c);
