@@ -10,9 +10,12 @@ PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o \
 	       $(BUILD_PATH)/my_systick.o \
 	       $(BUILD_PATH)/buttons.o \
 	       $(BUILD_PATH)/fonts.o \
-	       $(BUILD_PATH)/term_io.o
-
-CFLAGS += -I. -DUSER_PROVIDES_SYSTICK_HANDLER
+	       $(BUILD_PATH)/term_io.o \
+	       $(BUILD_PATH)/fs/ff.o \
+	       $(BUILD_PATH)/fs/fattime.o \
+	       $(BUILD_PATH)/fs/sd_spi_stm32.o \
+	
+CFLAGS += -I. -Ifs -DUSER_PROVIDES_SYSTICK_HANDLER
 
 # I believe this overrides a maple-provided rule
 # 

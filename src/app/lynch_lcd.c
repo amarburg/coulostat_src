@@ -1,36 +1,3 @@
-/******************************************************************************
- * The MIT License
- *
- * Copyright (c) 2010 Aaron Marburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *****************************************************************************/
-
-/* @file s1d15g00.c
- * @brief Graphics driver Epson S1D15G00 LCD controller
- *
- * Lifted heavily from James Lynch's August 30 2007 code.
- *
- * Contains code specific to the Espon controller.  Requires the following
- * hardware/SPI-specific functions to be defined elsewhere: WriteSpiData, WriteSpiCommand, LcdReset.
- */
-
 // lcd.c 
 // 
 // Nokia 6610 LCD Display Driver (Epson S1D15G00 Controller) 
@@ -62,7 +29,7 @@
 // | |--------------------------| 
 // (0,0) Columns (0,131) 
 // 
-// ------------Y--------------> 
+// ------------Y--------------&gt; 
 // 
 // 
 // 132 x 132 pixel matrix has two methods to specify the color info 
@@ -100,64 +67,146 @@
 // 
 // Author: James P Lynch August 30, 2007 
 // *************************************************************************************************************** 
-
-/*== Start user-configurable bits ==*/
-#include "nokia6100.h"
-/* This code assumes a micro-specific driver will provide the functions 
- *    void WriteSpiCommand( uint32 char )
- *    void WriteSpiData( uint32 char )
- *    void LcdReset(void)
- * It also expects a function delay(ms). */
-#define Delay delay
-extern void delay( unsigned long ms );
-/*== End user-configurable bits ==*/
-
-#include "term_io.h"
  
-#include "s1d15g00.h"
-
-#include "fonts.h"
-// Provides ASSERT(..)
-#include <util.h>
-
-#define DISON 0xAF // Display on 
-#define DISOFF 0xAE // Display off 
-#define DISNOR 0xA6 // Normal display 
-#define DISINV 0xA7 // Inverse display 
-#define COMSCN 0xBB // Common scan direction 
-#define DISCTL 0xCA // Display control 
-#define SLPIN 0x95 // Sleep in 
-#define SLPOUT 0x94 // Sleep out 
-#define PASET 0x75 // Page address set 
-#define CASET 0x15 // Column address set 
-#define DATCTL 0xBC // Data scan direction, etc. 
-#define RGBSET8 0xCE // 256-color position set 
-#define RAMWR 0x5C // Writing to memory 
-#define RAMRD 0x5D // Reading from memory 
-#define PTLIN 0xA8 // Partial display in 
-#define PTLOUT 0xA9 // Partial display out 
-#define RMWIN 0xE0 // Read and modify write 
-#define RMWOUT 0xEE // End 
-#define ASCSET 0xAA // Area scroll set 
-#define SCSTART 0xAB // Scroll start set 
-#define OSCON 0xD1 // Internal oscillation on 
-#define OSCOFF 0xD2 // Internal oscillation off 
-#define PWRCTR 0x20 // Power control 
-#define VOLCTR 0x81 // Electronic volume control 
-#define VOLUP 0xD6 // Increment electronic control by 1 
-#define VOLDOWN 0xD7 // Decrement electronic control by 1 
-#define TMPGRD 0x82 // Temperature gradient set 
-#define EPCTIN 0xCD // Control EEPROM 
-#define EPCOUT 0xCC // Cancel EEPROM control 
-#define EPMWR 0xFC // Write into EEPROM 
-#define EPMRD 0xFD // Read from EEPROM 
-#define EPSRRD1 0x7C // Read register 1 
-#define EPSRRD2 0x7D // Read register 2 
-#define NOP 0x25 // NOP instruction 
-
-
-/* Lynch's Blacklight() function removed here */
-
+// ************************************** 
+// Include Files 
+// ************************************** 
+//#include "LPC23xx.H" 											// LPC2368 MPU Register 
+#include "s1d15g00.h"		 									// LCD-NOKIA6610 Epson:S1D1G00 Controller 
+ 
+// ************************************** 
+// forward references 
+// ************************************** 
+const unsigned char FONT6x8[97][8]; 
+const unsigned char FONT8x8[97][8]; 
+const unsigned char FONT8x16[97][16]; 
+ 
+void WriteSpiCommand(unsigned int data); 
+void WriteSpiData(unsigned int data); 
+void Backlight(unsigned char state); 
+void InitLcd(void); 
+void LCDWrite130x130bmp( unsigned char * image );  
+void LCDClearScreen(void); 
+void LCDSetPixel(int x, int y, int color); 
+void LCDSetLine(int x1, int y1, int x2, int y2, int color); 
+void LCDSetRect(int x0, int y0, int x1, int y1, unsigned char fill, int color); 
+void LCDSetCircle(int x0, int y0, int radius, int color); 
+void LCDPutChar(char c, int x, int y, int size, int fcolor, int bcolor); 
+void LCDPutStr(char *pString, int x, int y, int Size, int fColor, int bColor); 
+extern void Delay(vu32 nCount); 
+ 
+// ***************************************************************************** 
+// WriteSpiCommand.c 
+// 
+// Writes 9-bit command to LCD display via SPI interface 
+// 
+// Inputs: data - Epson S1D15G00 controller/driver command 
+// 
+// 
+// Note: clears bit 8 to indicate command transfer 
+// 
+// Author: Olimex, James P Lynch August 30, 2007 
+// ***************************************************************************** 
+void WriteSpiCommand(volatile unsigned int command)  
+{ 
+  unsigned char Bit = 0;									// Bit Counter 
+																 
+  LCD_CS_HI();												// Makesure CS = Disable 
+  LCD_SCLK_LO(); 											// Prepared SCLK 
+ 
+  LCD_CS_LO();												// Start CS = Enable 
+  LCD_SDATA_LO();  											// D/C# = 0(Command) 
+  LCD_SCLK_HI();											// Strobe Signal Bit(SDATA) 
+  LCD_SCLK_LO(); 											// Standby SCLK  
+    
+  for (Bit = 0; Bit &lt; 8; Bit++)								// 8 Bit Write 
+  { 
+    LCD_SCLK_LO(); 											// Standby SCLK  
+ 
+	if((command&amp;0x80)&gt;&gt;7) 	 
+	{ 
+	  LCD_SDATA_HI(); 
+	} 
+	else  
+	{ 
+	  LCD_SDATA_LO(); 
+	} 
+ 
+	LCD_SCLK_HI();											// Strobe Signal Bit(SDATA) 
+ 
+	command &lt;&lt;= 1;	 										// Next Bit Data 
+  }   
+  LCD_SCLK_LO();  											// Standby SCLK  
+  LCD_CS_HI();												// Stop CS = Disable 
+} 
+ 
+// ***************************************************************************** 
+// WriteSpiData.c 
+// 
+// Writes 9-bit command to LCD display via SPI interface 
+// 
+// Inputs: data - Epson S1D15G00 controller/driver command 
+// 
+// 
+// Note: Sets bit 8 to indicate data transfer 
+// 
+// Author: Olimex, James P Lynch August 30, 2007 
+// ***************************************************************************** 
+void WriteSpiData(volatile unsigned int data)  
+{ 
+  unsigned char Bit = 0;									// Bit Counter 
+ 
+  LCD_CS_HI();												// Makesure CS = Disable 
+  LCD_SCLK_LO();											// Standby SCLK  
+ 
+  LCD_CS_LO();												// Start CS = Enable 
+  LCD_SDATA_HI();  											// D/C# = 1(Data) 
+  LCD_SCLK_HI();											// Strobe Signal Bit(SDATA) 
+  LCD_SCLK_LO();											// Standby SCLK  
+ 
+  for (Bit = 0; Bit &lt; 8; Bit++)								// 8 Bit Write 
+  { 
+    LCD_SCLK_LO(); 											// Standby SCLK  
+ 
+	if((data&amp;0x80)&gt;&gt;7) 
+	{ 
+	  LCD_SDATA_HI();   
+	} 
+	else 
+	{  
+	  LCD_SDATA_LO(); 
+	} 
+ 
+	LCD_SCLK_HI();											// Strobe Signal Bit(SDATA) 
+ 
+	data &lt;&lt;= 1;	 											// Next Bit Data 
+  }  
+  LCD_SCLK_LO();											// Standby SCLK  
+  LCD_CS_HI();												// Stop CS = Disable   
+} 
+ 
+// ***************************************************************************** 
+// Backlight.c 
+// 
+// Turns the backlight on and off 
+// 
+// Inputs: state - 1 = backlight on 
+// 2 = backlight off 
+// 
+// 
+// Author: Olimex, James P Lynch August 30, 2007 
+// ***************************************************************************** 
+void Backlight(unsigned char state)  
+{ 
+  if (state == 1) 
+  { 
+    LCD_BL_HI();											// Black Light ON  
+  } 
+  else 
+  { 
+    LCD_BL_LO();											// Black Light OFF  
+  } 
+} 
 // ***************************************************************************** 
 // InitLcd.c 
 // 
@@ -168,9 +217,13 @@ extern void delay( unsigned long ms );
 // Author: James P Lynch August 30, 2007 
 // ***************************************************************************** 
 void InitLcd(void)  
-{
-  LcdReset();
-
+{ 
+  // Hardware reset 
+  LCD_RESET_LO();											// Start Reset   
+  Delay(20000);												// Reset Pulse Time 
+  LCD_RESET_HI();											// Release Reset 
+  Delay(20000); 
+ 
   // Display control 
   WriteSpiCommand(DISCTL); 
   WriteSpiData(0x00); // P1: 0x00 = 2 divisions, switching period=8 (default) 
@@ -179,7 +232,7 @@ void InitLcd(void)
  
   // COM scan 
   WriteSpiCommand(COMSCN); 
-  WriteSpiData(1); // P1: 0x01 = Scan 1->80, 160<-81 
+  WriteSpiData(1); // P1: 0x01 = Scan 1-&gt;80, 160&lt;-81 
  
   // Internal oscilator ON 
   WriteSpiCommand(OSCON); 
@@ -198,7 +251,7 @@ void InitLcd(void)
   WriteSpiCommand(DATCTL); 
   WriteSpiData(0x01); // P1: 0x01 = page address inverted, column address normal, address scan in column direction 
   WriteSpiData(0x00); // P2: 0x00 = RGB sequence (default value) 
-  WriteSpiData(0x02); // P3: 0x02 = Grayscale -> 16 (selects 12-bit color, type A) 
+  WriteSpiData(0x02); // P3: 0x02 = Grayscale -&gt; 16 (selects 12-bit color, type A) 
  
   // Voltage control (contrast setting) 
   WriteSpiCommand(VOLCTR); 
@@ -206,7 +259,7 @@ void InitLcd(void)
   WriteSpiData(3); // P2 = 3 resistance ratio (only value that works) 
  
   // allow power supply to stabilize 
-  Delay(1000); 
+  Delay(100000); 
  
   // turn on the display 
   WriteSpiCommand(DISON); 
@@ -230,7 +283,7 @@ void LCDWrite130x130bmp( unsigned char * image)
   WriteSpiCommand(DATCTL); 
   WriteSpiData(0x00); // P1: 0x00 = page address normal, column address normal, address scan in column direction 
   WriteSpiData(0x00); // P2: 0x00 = RGB sequence (default value) 
-  WriteSpiData(0x02); // P3: 0x02 = Grayscale -> 16 
+  WriteSpiData(0x02); // P3: 0x02 = Grayscale -&gt; 16 
  
   // Display OFF 
   WriteSpiCommand(DISOFF); 
@@ -247,7 +300,7 @@ void LCDWrite130x130bmp( unsigned char * image)
  
   // WRITE MEMORY 
   WriteSpiCommand(RAMWR); 
-  for(j = 0; j < 25740; j++)  
+  for(j = 0; j &lt; 25740; j++)  
   { 
     WriteSpiData(image[j]); 
   } 
@@ -256,7 +309,7 @@ void LCDWrite130x130bmp( unsigned char * image)
   WriteSpiCommand(DATCTL); 
   WriteSpiData(0x01); // P1: 0x01 = page address inverted, column address normal, address scan in column direction 
   WriteSpiData(0x00); // P2: 0x00 = RGB sequence (default value) 
-  WriteSpiData(0x02); // P3: 0x02 = Grayscale -> 16 
+  WriteSpiData(0x02); // P3: 0x02 = Grayscale -&gt; 16 
  
   // Display On 
   WriteSpiCommand(DISON); 
@@ -287,16 +340,14 @@ void LCDClearScreen(void)
  
   // set the display memory to BLACK 
   WriteSpiCommand(RAMWR); 
-  for(i = 0; i < ((131 * 131) / 2); i++)  
+  for(i = 0; i &lt; ((131 * 131) / 2); i++)  
   { 
-    WriteSpiData((BLACK >> 4) & 0xFF); 
-    WriteSpiData(((BLACK & 0xF) << 4) | ((BLACK >> 8) & 0xF)); 
-    WriteSpiData(BLACK & 0xFF); 
+    WriteSpiData((BLACK &gt;&gt; 4) &amp; 0xFF); 
+    WriteSpiData(((BLACK &amp; 0xF) &lt;&lt; 4) | ((BLACK &gt;&gt; 8) &amp; 0xF)); 
+    WriteSpiData(BLACK &amp; 0xFF); 
   } 
 } 
  
-inline void LCDFillScreen( int color ) 
-  { LCDSetRect( 0,0,LCD_WIDTH,LCD_HEIGHT, FILL, color ); }
  
 // ************************************************************************************* 
 // LCDSetPixel.c 
@@ -338,9 +389,9 @@ void LCDSetPixel(int x, int y, int color)
  
   // Now illuminate the pixel (2nd pixel will be ignored) 
   WriteSpiCommand(RAMWR); 
-  WriteSpiData((color >> 4) & 0xFF); 
-  WriteSpiData(((color & 0xF) << 4) | ((color >> 8) & 0xF)); 
-  WriteSpiData(color & 0xFF); 
+  WriteSpiData((color &gt;&gt; 4) &amp; 0xFF); 
+  WriteSpiData(((color &amp; 0xF) &lt;&lt; 4) | ((color &gt;&gt; 8) &amp; 0xF)); 
+  WriteSpiData(color &amp; 0xFF); 
 } 
  
 // ************************************************************************************************* 
@@ -380,17 +431,17 @@ void LCDSetLine(int x0, int y0, int x1, int y1, int color)
   int dy = y1 - y0; 
   int dx = x1 - x0; 
   int stepx, stepy; 
-  if (dy < 0) { dy = -dy; stepy = -1; } else { stepy = 1; } 
-  if (dx < 0) { dx = -dx; stepx = -1; } else { stepx = 1; } 
-  dy <<= 1; // dy is now 2*dy 
-  dx <<= 1; // dx is now 2*dx 
+  if (dy &lt; 0) { dy = -dy; stepy = -1; } else { stepy = 1; } 
+  if (dx &lt; 0) { dx = -dx; stepx = -1; } else { stepx = 1; } 
+  dy &lt;&lt;= 1; // dy is now 2*dy 
+  dx &lt;&lt;= 1; // dx is now 2*dx 
   LCDSetPixel(x0, y0, color); 
-  if (dx > dy)  
+  if (dx &gt; dy)  
   { 
-    int fraction = dy - (dx >> 1); // same as 2*dy - dx 
+    int fraction = dy - (dx &gt;&gt; 1); // same as 2*dy - dx 
     while (x0 != x1)  
     { 
-      if (fraction >= 0)  
+      if (fraction &gt;= 0)  
 	  { 
         y0 += stepy; 
         fraction -= dx; // same as fraction -= 2*dx 
@@ -402,10 +453,10 @@ void LCDSetLine(int x0, int y0, int x1, int y1, int color)
   }  
   else  
   { 
-    int fraction = dx - (dy >> 1); 
+    int fraction = dx - (dy &gt;&gt; 1); 
     while (y0 != y1)  
 	{ 
-      if (fraction >= 0)  
+      if (fraction &gt;= 0)  
 	  { 
         x0 += stepx; 
         fraction -= dy; 
@@ -450,10 +501,10 @@ void LCDSetLine(int x0, int y0, int x1, int y1, int color)
 // 1. Given the coordinates of two opposing corners (x0, y0) (x1, y1) 
 // calculate the minimums and maximums of the coordinates 
 // 
-// xmin = (x0 <= x1) ? x0 : x1; 
-// xmax = (x0 > x1) ? x0 : x1; 
-// ymin = (y0 <= y1) ? y0 : y1; 
-// ymax = (y0 > y1) ? y0 : y1; 
+// xmin = (x0 &lt;= x1) ? x0 : x1; 
+// xmax = (x0 &gt; x1) ? x0 : x1; 
+// ymin = (y0 &lt;= y1) ? y0 : y1; 
+// ymax = (y0 &gt; y1) ? y0 : y1; 
 // 
 // 2. Now set up the drawing box to be the desired rectangle 
 // 
@@ -481,10 +532,10 @@ void LCDSetLine(int x0, int y0, int x1, int y1, int color)
 // 
 // 4. Now a simple memory write loop will fill the rectangle 
 // 
-// for (i = 0; i < ((((xmax - xmin + 1) * (ymax - ymin + 1)) / 2) + 1); i++) { 
-// WriteSpiData((color >> 4) & 0xFF); 
-// WriteSpiData(((color & 0xF) << 4) | ((color >> 8) & 0xF)); 
-// WriteSpiData(color & 0xFF); 
+// for (i = 0; i &lt; ((((xmax - xmin + 1) * (ymax - ymin + 1)) / 2) + 1); i++) { 
+// WriteSpiData((color &gt;&gt; 4) &amp; 0xFF); 
+// WriteSpiData(((color &amp; 0xF) &lt;&lt; 4) | ((color &gt;&gt; 8) &amp; 0xF)); 
+// WriteSpiData(color &amp; 0xFF); 
 // } 
 // 
 // 
@@ -505,10 +556,10 @@ void LCDSetRect(int x0, int y0, int x1, int y1, unsigned char fill, int color)
     // best way to create a filled rectangle is to define a drawing box 
     // and loop two pixels at a time 
     // calculate the min and max for x and y directions 
-    xmin = (x0 <= x1) ? x0 : x1; 
-    xmax = (x0 > x1) ? x0 : x1; 
-    ymin = (y0 <= y1) ? y0 : y1; 
-    ymax = (y0 > y1) ? y0 : y1; 
+    xmin = (x0 &lt;= x1) ? x0 : x1; 
+    xmax = (x0 &gt; x1) ? x0 : x1; 
+    ymin = (y0 &lt;= y1) ? y0 : y1; 
+    ymax = (y0 &gt; y1) ? y0 : y1; 
  
     // specify the controller drawing box according to those limits 
     // Row address set (command 0x2B) 
@@ -525,12 +576,12 @@ void LCDSetRect(int x0, int y0, int x1, int y1, unsigned char fill, int color)
     WriteSpiCommand(RAMWR); 
  
     // loop on total number of pixels / 2 
-    for (i = 0; i < ((((xmax - xmin + 1) * (ymax - ymin + 1)) / 2) + 130); i++)  
+    for (i = 0; i &lt; ((((xmax - xmin + 1) * (ymax - ymin + 1)) / 2) + 130); i++)  
 	{ 
       // use the color value to output three data bytes covering two pixels 
-      WriteSpiData((color >> 4) & 0xFF); 
-      WriteSpiData(((color & 0xF) << 4) | ((color >> 8) & 0xF)); 
-      WriteSpiData(color & 0xFF); 
+      WriteSpiData((color &gt;&gt; 4) &amp; 0xFF); 
+      WriteSpiData(((color &amp; 0xF) &lt;&lt; 4) | ((color &gt;&gt; 8) &amp; 0xF)); 
+      WriteSpiData(color &amp; 0xFF); 
     } 
   }  
   else  
@@ -572,9 +623,9 @@ void LCDSetCircle(int x0, int y0, int radius, int color)
   LCDSetPixel(x0, y0 - radius, color); 
   LCDSetPixel(x0 + radius, y0, color); 
   LCDSetPixel(x0 - radius, y0, color); 
-  while(x < y)  
+  while(x &lt; y)  
   { 
-    if(f >= 0)  
+    if(f &gt;= 0)  
 	{ 
       y--; 
       ddF_y += 2; 
@@ -606,7 +657,7 @@ void LCDSetCircle(int x0, int y0, int radius, int color)
 // fcolor = 12-bit foreground color value rrrrggggbbbb 
 // bcolor = 12-bit background color value rrrrggggbbbb 
 // 
-// Returns: width of character printed (in pixels)
+// Returns: nothing 
 // 
 // Notes: Here's an example to display "E" at address (20,20) 
 // 
@@ -629,7 +680,7 @@ void LCDSetCircle(int x0, int y0, int radius, int color)
 // | | 
 // (20,20) (20,27) 
 // 
-// ------y-----------> 
+// ------y-----------&gt; 
 // 
 // 
 // The most efficient way to display a character is to make use of the "wrap-around" feature 
@@ -669,7 +720,7 @@ void LCDSetCircle(int x0, int y0, int radius, int color)
 // 
 // Author: James P Lynch August 30, 2007 
 // ***************************************************************************** 
-int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)  
+void LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)  
 { 
   extern const unsigned char FONT6x8[97][8]; 
   extern const unsigned char FONT8x8[97][8]; 
@@ -678,142 +729,71 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
   unsigned int nCols; 
   unsigned int nRows; 
   unsigned int nBytes; 
-  unsigned int stopCol, stopRow;
   unsigned char PixelRow; 
   unsigned char Mask; 
   unsigned int Word0; 
   unsigned int Word1; 
   unsigned char *pFont; 
   unsigned char *pChar; 
-  char offset_char;
-  char this_byte;
-  const FONT_INFO *font = font_table[size];
-
-  offset_char = c - font->startChar;
-  if( (offset_char < 0) || (offset_char > font->endChar) ) return -1;
-  if( font->charInfo[offset_char].width == 0 ) return -1;
-
-  nRows = font->charInfo[offset_char].height;
-  nCols = font->charInfo[offset_char].width;
-
-  ASSERT( font->charInfo[offset_char].offset >= 0 );
-  pChar = &(font->data[ font->charInfo[offset_char].offset ]);
-
-  // TODO: Catch clipping.  Slightly more complicated because
-  // data is sent out in pairs of pixels,
-  // and because row array is upside down.
-  stopCol = nCols;
-  if( (y+nCols) > LCD_WIDTH ) {
-   stopCol = LCD_WIDTH-y;
-   if( stopCol % 2 !=0 ) stopCol--;
-   if( stopCol <= 0 ) return -1;
-
-   // For now, just don't clip
-   if( stopCol < nCols ) return -1;
-  }
-
-  stopRow = nRows;
-  if( (x+nRows) > LCD_HEIGHT ) {
-    stopRow = LCD_HEIGHT-x;
-    if( stopRow <= 0 ) return -1;
-    
-   // For now, just don't clip
-   if( stopRow < nRows ) return -1;
-  }
-
+  unsigned char *FontTable[] = {(unsigned char *)FONT6x8, (unsigned char *)FONT8x8, 
+                                (unsigned char *)FONT8x16}; 
+  // get pointer to the beginning of the selected font table 
+  pFont = (unsigned char *)FontTable[size]; 
+  // get the nColumns, nRows and nBytes 
+  nCols = *pFont; 
+  nRows = *(pFont + 1); 
+  nBytes = *(pFont + 2); 
+ 
+  // get pointer to the last byte of the desired character 
+  pChar = pFont + (nBytes * (c - 0x1F)) + nBytes - 1; 
+ 
   // Row address set (command 0x2B) 
   WriteSpiCommand(PASET); 
   WriteSpiData(x); 
-  WriteSpiData(x + nRows - 1 ); 
-
+  WriteSpiData(x + nRows - 1); 
+ 
   // Column address set (command 0x2A) 
   WriteSpiCommand(CASET); 
   WriteSpiData(y); 
-  WriteSpiData(y + stopCol - 1); 
-
+  WriteSpiData(y + nCols - 1); 
+ 
   // WRITE MEMORY 
   WriteSpiCommand(RAMWR); 
-
-  // The LCD factory fonts are stored upside down, so we can step
-  // forward through the rows and still from bottom to top...
-
-  // In inverted page (row) addressing mode, I think it's starting from
-  // row 0 (the top row as far as the font is concerned) but still wrapping
-  // through memory in the non-inverted positive direction -- that's "up"
-  // or "negative" in the inverted frame of reference.
-  // So it's writing the _top_ row of the font then wrapping around 
-  // and starting at the bottom.
-  // The "right" way is to flip the LCD around.  The wrong way (as 
-  // shown here is to push out a blank row first
-  // Another option would be to shift all of the rows in the font by one
-  // but that would be hard to undo...
-#define LCD_INVERTED_FIRST_ROW_HACK
-#ifdef  LCD_INVERTED_FIRST_ROW_HACK
-  for (j = 0; j < nCols; j += 2)  
-  { 
-    if( (j < stopCol) && (i < stopRow)  ) {
-
-      Word0 = bColor; 
-      Word1 = bColor; 
-
-      WriteSpiData((Word0 >> 4) & 0xFF); 
-      WriteSpiData(((Word0 & 0xF) << 4) | ((Word1 >> 8) & 0xF)); 
-      WriteSpiData(Word1 & 0xFF); 
-    }
-  } 
-#endif
-
+ 
   // loop on each row, working backwards from the bottom to the top 
-  for (i = 0; i < nRows; i++ ) { 
-
+  for (i = nRows - 1; i &gt;= 0; i--)  
+  { 
+    // copy pixel row from font table and then decrement row 
+    PixelRow = *pChar--; 
+ 
     // loop on each pixel in the row (left to right) 
     // Note: we do two pixels each loop 
     Mask = 0x80; 
-    for (j = 0; j < nCols; j += 2)  
-    { 
-      // Somewhat inefficient, use the loops to step through the
-      // data even if you're not displaying it.
-      // Could be replaced by some clever addressing if you know
-      // bytes/row.
-      if( (j < stopCol) && (i < stopRow)  ) {
-        
-        // if pixel bit set, use foreground color; else use the background color 
-        // now get the pixel color for two successive pixels 
-        if ((*pChar & Mask) == 0) 
-          Word0 = bColor; 
-        else 
-          Word0 = fColor; 
-        Mask = Mask >> 1; 
-
-        if ((*pChar & Mask) == 0) 
-          Word1 = bColor; 
-        else 
-          Word1 = fColor; 
-        Mask = Mask >> 1; 
-
-        // use this information to output three data bytes 
-        WriteSpiData((Word0 >> 4) & 0xFF); 
-        WriteSpiData(((Word0 & 0xF) << 4) | ((Word1 >> 8) & 0xF)); 
-        WriteSpiData(Word1 & 0xFF); 
-      } else {
-        Mask >>= 2;
-      }
-
-      if( Mask == 0 ) {
-        Mask = 0x80;
-        pChar++;
-      }
+    for (j = 0; j &lt; nCols; j += 2)  
+	{ 
+      // if pixel bit set, use foreground color; else use the background color 
+      // now get the pixel color for two successive pixels 
+      if ((PixelRow &amp; Mask) == 0) 
+        Word0 = bColor; 
+      else 
+        Word0 = fColor; 
+      Mask = Mask &gt;&gt; 1; 
+ 
+      if ((PixelRow &amp; Mask) == 0) 
+        Word1 = bColor; 
+      else 
+        Word1 = fColor; 
+      Mask = Mask &gt;&gt; 1; 
+ 
+      // use this information to output three data bytes 
+      WriteSpiData((Word0 &gt;&gt; 4) &amp; 0xFF); 
+      WriteSpiData(((Word0 &amp; 0xF) &lt;&lt; 4) | ((Word1 &gt;&gt; 8) &amp; 0xF)); 
+      WriteSpiData(Word1 &amp; 0xFF); 
     } 
-
-    // If a row doesn't use a whole number of bytes, advance
-    if( Mask != 0x80 ) pChar++;
   } 
-
-
+ 
   // terminate the Write Memory command 
   WriteSpiCommand(NOP); 
-
-  return nCols;
 } 
  
 // ************************************************************************************************* 
@@ -838,27 +818,24 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
 // 
 // Author: James P Lynch August 30, 2007 
 // ************************************************************************************************* 
-void LCDPutStr(const char *pString, int x, int y, int Size, int fColor, int bColor)  
+void LCDPutStr(char *pString, int x, int y, int Size, int fColor, int bColor)  
 { 
-  int c_width;
-
   // loop until null-terminator is seen 
   while (*pString != 0x00)  
   { 
     // draw the character 
-    c_width = LCDPutChar(*pString++, x, y, Size, fColor, bColor); 
-
-    if( c_width < 0 ) {
-//      debug_print("LCD error printing \"");
-//      debug_putc( *(pString-1) );
-//      debug_println("\"");
-      // take action
-    } 
-
-    y += c_width;
+    LCDPutChar(*pString++, x, y, Size, fColor, bColor); 
+ 
+    // advance the y position 
+    if (Size == SMALL) 
+      y = y + 6; 
+    else if (Size == MEDIUM) 
+      y = y + 8; 
+    else 
+      y = y + 8; 
  
     // bail out if y exceeds 131 
-    if (y > LCD_WIDTH) break; 
+    if (y &gt; 131) break; 
   } 
 } 
 

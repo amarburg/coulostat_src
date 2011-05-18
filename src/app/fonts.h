@@ -26,12 +26,12 @@ typedef struct
 // Describes a single font
 typedef struct
 {
-  const uint8_t 			heightPages;	// height, in pages (8 pixels), of the font's characters
-  const uint8_t 			startChar;		// the first character in the font (e.g. in charInfo and data)
-  const uint8_t                    endChar;        // the last character in the font
-  const uint8_t			spacePixels;	// number of pixels that a space character takes up
-  const FONT_CHAR_INFO*	charInfo;		// pointer to array of char information
-  const uint8_t*			data;			// pointer to generated array of character visual representation
+  const uint8_t          heightPixels;
+  const uint8_t          startChar;
+  const uint8_t          endChar;    
+  const uint8_t          spacePixels;
+  const FONT_CHAR_INFO*	 charInfo;	
+  const uint8_t*         data;
 
 } FONT_INFO;	
 

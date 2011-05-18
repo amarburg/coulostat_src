@@ -1,14 +1,22 @@
+/**************************************************************************
+ *
+ * FILE NAME:			bitmapDb.h
+ * FILE DESCRIPTION:	Database of all bitmaps in the system
+ *
+ * FILE CREATION DATE:	24-07-2009
+ *
+ *==========================================================================
+ *
+ * Modification history:
+ * --------------------
+ * 01a,24jul09 erd written
+ *
+ ***************************************************************************/
 
-
-#ifndef __FONTS_H__
-#define __FONTS_H__
+#ifndef __BITMAP_DB_H_
+#define __BITMAP_DB_H_
 
 #include <stdint.h>
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 // ==========================================================================
 // structure definition
@@ -35,25 +43,4 @@ typedef struct
 
 } FONT_INFO;	
 
-// Font sizes 
-#define SMALL  0 
-#define MEDIUM 1 
-#define LARGE  2 
-#define SS30PT   3
-#define SS59PT   4
- 
-typedef enum {
-  SMALL_font = 0,
-  MEDIUM_font = 1,
-  LARGE_font = 2,
-  SS30PT_font  = 3,
-  SS59PT_font  = 4
-} font_size_t;
-
-
-extern const FONT_INFO *font_table[];
-
-#ifdef __cplusplus
-}
-#endif
-#endif
+#endif /* __BITMAP_DB_H_ */
