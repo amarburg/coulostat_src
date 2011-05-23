@@ -18,15 +18,9 @@ path:
 	export PATH=$(LIB_MAPLE_HOME)/../arm/bin:$(PATH)
 
 
-externs: chan-fat arm
-
-CHAN_FAT_URL = http://elm-chan.org/fsw/ff/ff8a.zip
-
-chan-fat:
-	mkdir -p packages
-	mkdir -p lib/fat/ff8a
-	cd packages && wget -N ${CHAN_FAT_URL}
-	unzip -od lib/fat/ff8a packages/${notdir ${CHAN_FAT_URL}}
+# Used to include chan-fat here but found it required some work, so simply 
+# included in the code...
+externs: arm
 
 CODE_SOURCERY_URL = http://static.leaflabs.com/pub/codesourcery/arm-2010q1-188-arm-none-eabi-toolchain-linux32.tar.gz
 
