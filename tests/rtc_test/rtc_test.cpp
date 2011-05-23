@@ -9,8 +9,8 @@
 #include "term_io.h"
 #include <stdint.h>
 
-#include "rtc.h"
-#include "ds1338.h"
+#include "rtc/rtc.h"
+#include "rtc/ds1338.h"
 
 #define LED_PIN 13
 #define PWM_PIN  2
@@ -21,7 +21,6 @@ int toggle = 0;
 int rate = 0;
 int sample = 0;
 
-#define DUMMY_DAT "qwertyuiopasdfghjklzxcvbnmmmmmm,./1234567890-=qwertyuiopasdfghjklzxcvbnm,./1234567890"
 
 
 Ds1338Rtc rtc( Ds1338Rtc::I2C_1 );
@@ -43,17 +42,8 @@ void setup() {
   //    Serial3.begin(9600);
 
   /* Send a message out over COMM interface */
-  COMM.println(" ");
-  COMM.println("    __   __             _      _");
-  COMM.println("   |  \\/  | __ _ _ __ | | ___| |"); 
-  COMM.println("   | |\\/| |/ _` | '_ \\| |/ _ \\ |");
-  COMM.println("   | |  | | (_| | |_) | |  __/_|");
-  COMM.println("   |_|  |_|\\__,_| .__/|_|\\___(_)");
-  COMM.println("                 |_|");
-  COMM.println("                              by leaflabs");
   COMM.println("");
-  COMM.println("");
-  COMM.println("Maple interactive test program (type '?' for help)");
+  COMM.println("DS1338 Test program.");
   COMM.println("------------------------------------------------------------");
   COMM.print("> ");
 

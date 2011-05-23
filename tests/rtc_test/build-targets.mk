@@ -1,7 +1,9 @@
+VPATH = ../../lib/rtc
+
 PROJECT_OBJS = $(BUILD_PATH)/rtc.o \
 	       $(BUILD_PATH)/my_i2c.o
 	
-CFLAGS += -I.  -I..
+CFLAGS += -I.  -I.. -I$(TOP_LEVEL)/lib
 
 # I believe this overrides a maple-provided rule
 # 
