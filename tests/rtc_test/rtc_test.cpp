@@ -76,7 +76,7 @@ uint8_t c  = 0,d = 0;
   } else {
     COMM.println("Didn't get the expected return value ");
     COMM.print( retval );
-    COMM.println("");
+    COMM.println();
   }
 
 }
@@ -84,6 +84,69 @@ uint8_t c  = 0,d = 0;
 void writeRam( void )
 {
 
+}
+
+void readDate( void )
+{
+  Rtc::RawTime_t time;
+
+  COMM.println("Querying RTC");
+  rtc.readTimeRaw( time );
+  COMM.print("Sec: ");
+  COMM.println( time.sec );
+
+  COMM.print("Min: ");
+  COMM.println( time.min );
+
+  COMM.print("Hour: ");
+  COMM.println( time.hour );
+
+  COMM.print("Day of week: ");
+  switch( time.dow ) {
+    case 0: COMM.println("Sunday"); break;
+    case 1: COMM.println("Monday"); break;
+    case 2: COMM.println("Tuesday"); break;
+    case 3: COMM.println("Wednesday"); break;
+    case 4: COMM.println("Thursday`"); break;
+    case 5: COMM.println("Friday"); break;
+    case 6: COMM.println("Saturday"); break;
+  }
+
+  COMM.print("Date: ");
+  COMM.print( time.date );
+  switch( time.month ) {
+    case 0: COMM.print(" January "); break;
+    case 1: COMM.print(" Febuary "); break;
+    case 2: COMM.print(" March "); break;
+    case 3: COMM.print(" April "); break;
+    case 4: COMM.print(" May "); break;
+    case 5: COMM.print(" June "); break;
+    case 6: COMM.print(" July "); break;
+    case 7: COMM.print(" August "); break;
+    case 8: COMM.print(" September "); break;
+    case 9: COMM.print(" October "); break;
+    case 10: COMM.print(" November "); break;
+    case 11: COMM.print(" December "); break;
+    default: COMM.print(" undefined! "); break;
+  }
+  COMM.println( time.year );
+
+}
+
+void setDate( void )
+{
+  Rtc::RawTime_t time;
+
+  time.sec = 10;
+  time.min = 10;
+  time.hour = 10;
+  time.dow = 2;
+  time.date = 2;
+  time.month = 2;
+  time.year = 11;
+
+  COMM.println("Setting date");
+  rtc.writeTimeRaw( time );
 }
 
 
@@ -119,12 +182,16 @@ void loop() {
         // Write to ram
         writeRam();
         break;
-      case 95:  // '_'
-        COMM.println("Delaying for 5 seconds...");
-        delay(5000);
-        break;
-     default:
-        COMM.print("Unexpected: ");
+      case 'q':
+        // Query if clock is running
+        COMM.println("Clock is ");
+        if( rtc.isClockRunning() )
+          COMM.println(" running");
+        else
+          COMM.println(" not running");
+        break; 
+      default:
+          COMM.print("Unexpected: ");
         COMM.println(input);
     }
     COMM.print("> ");
