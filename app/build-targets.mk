@@ -15,7 +15,7 @@ PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o \
 	       $(BUILD_PATH)/fs/fattime.o \
 	       $(BUILD_PATH)/fs/sd_spi_stm32.o \
 	
-CFLAGS += -I. -Ifs -DUSER_PROVIDES_SYSTICK_HANDLER
+CFLAGS += -I. -I$(TOP_LEVEL)/lib -Ifs -DUSER_PROVIDES_SYSTICK_HANDLER
 
 # I believe this overrides a maple-provided rule
 # 

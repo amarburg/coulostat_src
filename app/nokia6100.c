@@ -30,7 +30,6 @@
 #include "rcc.h"
 #include "nvic.h"
 #include "usart.h"
-#include "timers.h"
 
 /* header files from wirish */
 #include "time.h"
