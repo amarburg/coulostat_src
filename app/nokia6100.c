@@ -30,11 +30,25 @@
 #include "rcc.h"
 #include "nvic.h"
 #include "usart.h"
+#include "gpio.h"
+#include "timer.h"
 
 /* header files from wirish */
 #include "time.h"
 
 #include "nokia6100.h"
+
+#define NOKIA_USART_GPIO GPIOA
+#define NOKIA_TIMER TIMER2
+struct usart_pins {
+  const uint8 tx_pin, rx_pin, ck_pin;
+  const uint8 compare_num;
+} NOKIA_PINS = { 
+  .tx_pin = 2,
+  .rx_pin = 3,
+  .ck_pin = 4,
+  .compare_num = 3
+};
 
 /* These defines are redundant with libmaple/usart.c */
 #define USART_UE       BIT(13)
@@ -95,13 +109,10 @@ void nokia_init( void )
     /* Code based loosely on libmaple's usart.[ch] module.  Makes use of some of 
      * the device definition structures defined there.
     */
-    ASSERT(NOKIA_USART <= NR_USART);
-    usart_port *port;
-    usart_pins *pins;
+    //ASSERT(NOKIA_USART <= NR_USART);
 
     /*usart_init( NOKIA_USART, 9600 );*/// 6000000UL );
-    port = usart_dev_table[NOKIA_USART].base;
-    pins = usart_dev_table[NOKIA_USART].pins;
+  usart_reg_map *regs = NOKIA_USART->regs;
 
     //uint32 clk_speed;
     //uint32 integer_part;
@@ -109,21 +120,21 @@ void nokia_init( void )
     //uint32 tmp;
     //uint32 baud = 6000000UL;
 
-    rcc_clk_enable(usart_dev_table[NOKIA_USART].rcc_dev_num);
-    nvic_irq_enable(usart_dev_table[NOKIA_USART].nvic_dev_num); 
+    rcc_clk_enable(NOKIA_USART->clk_id);
+    nvic_irq_enable(NOKIA_USART->irq_num);
 
     /* Configure the pins appropriately  */
-    gpio_set_mode(pins->gpio_port, pins->tx_pin, GPIO_MODE_AF_OUTPUT_PP);
-    gpio_set_mode(pins->gpio_port, pins->rx_pin, GPIO_MODE_INPUT_FLOATING);
-    gpio_set_mode(pins->gpio_port, pins->ck_pin, GPIO_MODE_AF_OUTPUT_PP); 
+    gpio_set_mode(NOKIA_USART_GPIO, NOKIA_PINS.tx_pin, GPIO_OUTPUT_PP );
+    gpio_set_mode(NOKIA_USART_GPIO, NOKIA_PINS.rx_pin, GPIO_INPUT_FLOATING );
+    gpio_set_mode(NOKIA_USART_GPIO, NOKIA_PINS.ck_pin, GPIO_OUTPUT_PP );
 
-    gpio_set_mode( NOKIA_GPIO, NOKIA_CS, GPIO_MODE_OUTPUT_PP );
-    gpio_set_mode( NOKIA_GPIO, NOKIA_RESET, GPIO_MODE_OUTPUT_PP );
+    gpio_set_mode( NOKIA_GPIO, NOKIA_CS, GPIO_OUTPUT_PP );
+    gpio_set_mode( NOKIA_GPIO, NOKIA_RESET, GPIO_OUTPUT_PP );
 
     if ((NOKIA_USART == USART1) ||
         (NOKIA_USART == USART2)) {
       /* turn off any pwm if there's a conflict on this usart */
-      timer_set_mode(pins->timer_num, pins->compare_num, TIMER_DISABLED);
+      timer_set_mode(NOKIA_TIMER, NOKIA_PINS.compare_num, TIMER_DISABLED);
     }
 
     /* Set baud rate  */
@@ -136,16 +147,16 @@ void nokia_init( void )
     //tmp |= (((fractional_part * 16) + 50) / 100) & ((uint8)0x0F);
 
     //port->BRR = (uint16)tmp;
-    port->BRR = 1<<4; // For USART2, BRR = 1.0. corresponds to 2.25 Mbaud.  
-    port->CR1 |= (USART_TE | USART_M); // RX, TX enable, 9-bit
-    port->CR2 |= (USART_CLKEN | USART_LBCL); //enable SCK pin CPOL and CPHA are also in this register
+    regs->BRR = 1<<4; // For USART2, BRR = 1.0. corresponds to 2.25 Mbaud.  
+    regs->CR1 |= (USART_TE | USART_M); // RX, TX enable, 9-bit
+    regs->CR2 |= (USART_CLKEN | USART_LBCL); //enable SCK pin CPOL and CPHA are also in this register
 
     // not CPOL = SCK idles low
     // not CPHA = data clocked on first transition (in this case low-to-high)
-    port->CR2 &= ~(USART_CPOL | USART_CPHA);
+    regs->CR2 &= ~(USART_CPOL | USART_CPHA);
 
     nokia_disable_cs();
-    port->CR1 |= USART_UE; // USART enable
+    regs->CR1 |= USART_UE; // USART enable
 }
 
 /** 
@@ -164,12 +175,12 @@ void nokia_reset( void ) {
  */
 static inline void nokia_write_spi( uint32 data ) {
   nokia_enable_cs();
-  usart_port *port = usart_dev_table[NOKIA_USART].base;
-  uint32 a = port->SR;
-  port->DR = data & 0x000001FF;
+  usart_reg_map *regs = NOKIA_USART->regs;
+  uint32 a = regs->SR;
+  regs->DR = data & 0x000001FF;
   /* As we're controlling chip select, need to wait for the whole data
    * frame to be transmitted, so we watch TC, not TXE */
-  while ((port->SR & USART_TC) == 0) ;
+  while ((regs->SR & USART_TC) == 0) ;
   nokia_disable_cs();
 }
 

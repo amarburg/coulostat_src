@@ -43,8 +43,8 @@
 extern "C"{
 #endif
 
-#define NOKIA_USART         USART2
-#define NOKIA_GPIO          GPIOC_BASE
+#define NOKIA_USART USART2
+#define NOKIA_GPIO  GPIOC
 
 /* LCD reset (active low) is on PC7 */
 #define NOKIA_RESET         7
