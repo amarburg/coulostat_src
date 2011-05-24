@@ -67,8 +67,8 @@ static const menu_item_t root_item_info = {
     .next = &root_item2
   };
 
-static menu_item_t *current_item = &root_item1, 
-                   *const top_of_screen_item = &root_item1,
+static const menu_item_t *current_item = &root_item1, 
+                   *top_of_screen_item = &root_item1,
                    *current_menu = &root_item1,
                    *up_menu   = NULL,
                    *up_menu_last = NULL,
@@ -105,7 +105,7 @@ void refresh_menu( unsigned int keys )
   unsigned int y_offset = 0;
   unsigned int i = 0;
   const menu_item_t *this_item = top_of_screen_item;
-  menu_item_t *tmp;
+  const menu_item_t *tmp;
   unsigned int item_count = 0;
 
   if( keys & BTN_DOWN ) {

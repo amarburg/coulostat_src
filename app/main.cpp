@@ -18,7 +18,7 @@
 #include "my_adc.h"
 
 #include "nokia_lcd/nokia6100.h"
-#include "nokia_lcd/s1d15g00.h"
+#include "ui/gfx.h"
 #include "ui/ui.h"
 #include "ui/fonts.h"
 
@@ -82,9 +82,9 @@ void setup() {
   nokia_init();
   nokia_reset();
 
-  InitLcd();
-  LCDClearScreen();
-  LCDSetRect(0,0,132,132,FILL,BLACK);
+  GfxInit();
+  GfxClearScreen();
+  GfxSetRect(0,0,132,132,FILL,BLACK);
 
   // For 16x8 font, should get 8 rows and 16 columns
   //for( row = 0; row < 8; row++ )
@@ -102,7 +102,7 @@ void loop() {
   toggle ^= 1;
   digitalWrite(LED_PIN, toggle);
 
-  LCDSetPixel( 0,addr, bar_color ? RED : GREEN ); 
+  GfxSetPixel( 0,addr, bar_color ? RED : GREEN ); 
   addr++;
   if( addr > 131 ) { addr = 0; bar_color ^= 1; }
 
