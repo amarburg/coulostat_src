@@ -4,9 +4,9 @@
 #include "gpio.h"
 
 /* Use maple pin 23 == PC15 */
-#define SD_PWR_GPIO              GPIOC_BASE
+#define SD_PWR_GPIO              GPIOC
 #define SD_PWR_PIN               15
-#define SD_PWR_MODE              GPIO_MODE_OUTPUT_OD
+#define SD_PWR_MODE              GPIO_OUTPUT_OD
 
 
 void sd_init( void )
@@ -17,8 +17,6 @@ void sd_init( void )
 
 void sd_power( bool on )
 {
-  /*!!AMM GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; */
-
   if (on) {
     gpio_write_bit( SD_PWR_GPIO, SD_PWR_PIN, 0 );
   } else {

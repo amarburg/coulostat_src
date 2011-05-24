@@ -6,25 +6,25 @@
 volatile unsigned char key_state;
 volatile unsigned char key_pressed;
 
-#define BTN_GPIO   GPIOC_BASE
+#define BTN_GPIO   GPIOC
 
-#define BTN_LEFT_PIN 0
-#define BTN_UP_PIN 1
-#define BTN_DOWN_PIN 2
-#define BTN_RIGHT_PIN 3
-#define BTN_RED_PIN 4
-#define BTN_GREEN_PIN 5
+#define BTN_LEFT_PIN   0
+#define BTN_UP_PIN     1
+#define BTN_DOWN_PIN   2
+#define BTN_RIGHT_PIN  3
+#define BTN_RED_PIN    4
+#define BTN_GREEN_PIN  5
 
 
 void button_init( void )
 {
 
-  gpio_set_mode( BTN_GPIO, BTN_UP_PIN, GPIO_MODE_INPUT_FLOATING );
-  gpio_set_mode( BTN_GPIO, BTN_DOWN_PIN, GPIO_MODE_INPUT_FLOATING );
-  gpio_set_mode( BTN_GPIO, BTN_LEFT_PIN, GPIO_MODE_INPUT_FLOATING );
-  gpio_set_mode( BTN_GPIO, BTN_RIGHT_PIN, GPIO_MODE_INPUT_FLOATING );
-  gpio_set_mode( BTN_GPIO, BTN_GREEN_PIN, GPIO_MODE_INPUT_FLOATING );
-  gpio_set_mode( BTN_GPIO, BTN_RED_PIN, GPIO_MODE_INPUT_FLOATING );
+  gpio_set_mode( BTN_GPIO, BTN_UP_PIN, GPIO_INPUT_FLOATING );
+  gpio_set_mode( BTN_GPIO, BTN_DOWN_PIN, GPIO_INPUT_FLOATING );
+  gpio_set_mode( BTN_GPIO, BTN_LEFT_PIN, GPIO_INPUT_FLOATING );
+  gpio_set_mode( BTN_GPIO, BTN_RIGHT_PIN, GPIO_INPUT_FLOATING );
+  gpio_set_mode( BTN_GPIO, BTN_GREEN_PIN, GPIO_INPUT_FLOATING );
+  gpio_set_mode( BTN_GPIO, BTN_RED_PIN, GPIO_INPUT_FLOATING );
 }
 
 /* Use a version of the Danni debounce from here:
