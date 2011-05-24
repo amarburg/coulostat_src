@@ -10,7 +10,8 @@ PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o \
 	       $(BUILD_PATH)/my_systick.o \
 	       $(BUILD_PATH)/buttons.o \
 	       $(BUILD_PATH)/fonts.o \
-	       $(BUILD_PATH)/term_io.o \
+	       $(BUILD_PATH)/my_delay.o \
+	       $(BUILD_PATH)/lib/term_io.o \
 	       $(BUILD_PATH)/fs/ff.o \
 	       $(BUILD_PATH)/fs/fattime.o \
 	       $(BUILD_PATH)/fs/sd_spi_stm32.o \
@@ -26,6 +27,15 @@ $(BUILD_PATH)/%.o: %.c
 $(BUILD_PATH)/%.o: %.cpp
 	@mkdir -p $(dir $(@:%.o=%.d))
 	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+	
+$(BUILD_PATH)/lib/%.o: $(TOP_LEVEL)/lib/%.c
+	@mkdir -p $(dir $(@:%.o=%.d))
+	$(SILENT_CC) $(CC) $(CFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+
+$(BUILD_PATH)/lib/%.o: $(TOP_LEVEL)/lib/%.cpp
+	@mkdir -p $(dir $(@:%.o=%.d))
+	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+
 
 # main project target
 $(BUILD_PATH)/main.o: main.cpp 

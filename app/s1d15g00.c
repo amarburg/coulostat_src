@@ -103,6 +103,7 @@
 
 /*== Start user-configurable bits ==*/
 #include "nokia6100.h"
+#include "my_delay.h"
 /* This code assumes a micro-specific driver will provide the functions 
  *    void WriteSpiCommand( uint32 char )
  *    void WriteSpiData( uint32 char )

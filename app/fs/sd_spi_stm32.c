@@ -67,9 +67,9 @@
 /* Power switchable? */
 #define CARD_SUPPLY_SWITCHABLE   1
 /* Use maple pin 23 == PC15 */
-#define SD_PWR_GPIO              GPIOC_BASE
+#define SD_PWR_GPIO              GPIOC
 #define SD_PWR_PIN               15
-#define SD_PWR_MODE              GPIO_MODE_OUTPUT_OD
+#define SD_PWR_MODE              GPIO_OUTPUT_OD
 
 /* Write protect? */
 #define SOCKET_WP_CONNECTED      0
@@ -78,14 +78,14 @@
 #define SOCKET_CP_CONNECTED      1
 /* I'll connect it to Maple pin 35 == PC6 and 
  * use the internal pull-up */
-#define SD_CP_GPIO               GPIOC_BASE
+#define SD_CP_GPIO               GPIOC
 #define SD_CP_PIN                6
-#define SD_CP_MODE               GPIO_MODE_INPUT_PU
+#define SD_CP_MODE               GPIO_INPUT_PU
 
-#define SPI_SD                   2
+#define SPI_SD                   SPI2
 
 /* Chip select? */
-#define GPIO_CS                  GPIOB_BASE
+#define GPIO_CS                  GPIOB
 #define GPIO_Pin_CS              12
 
 #define DMA_Channel_SPI_SD_RX    DMA1_Channel2
@@ -93,7 +93,7 @@
 #define DMA_FLAG_SPI_SD_TC_RX    DMA1_FLAG_TC2
 #define DMA_FLAG_SPI_SD_TC_TX    DMA1_FLAG_TC3
 
-#define GPIO_SPI_SD              GPIOB_BASE
+#define GPIO_SPI_SD              GPIOB
 #define GPIO_Pin_SPI_SD_SCK      13
 #define GPIO_Pin_SPI_SD_MISO     14
 #define GPIO_Pin_SPI_SD_MOSI     15
@@ -102,8 +102,8 @@
 #define RCC_APBPeriph_SPI_SD     RCC_APB2Periph_SPI2
 
 /* - for SPI1 and full-speed APB2: 72MHz/4 */
-#define SPI_FAST_PRESCALER  CR1_BR_PRESCALE_4
-#define SPI_SLOW_PRESCALER  CR1_BR_PRESCALE_256
+#define SPI_FAST_PRESCALER  SPI_BAUD_PCLK_DIV_4
+#define SPI_SLOW_PRESCALER  SPI_BAUD_PCLK_DIV_256
 
 #else
 #error "unsupported board"
@@ -457,10 +457,10 @@ static void power_on (void)
 
   /* Configure I/O for Flash Chip select */
   /*!!AMM investigate the 50MHz flag... */
-  gpio_set_mode( GPIO_CS, GPIO_Pin_CS, GPIO_MODE_OUTPUT_PP );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_SCK, GPIO_MODE_AF_OUTPUT_PP );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MOSI, GPIO_MODE_AF_OUTPUT_PP );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MISO, GPIO_MODE_OUTPUT_PP );
+  gpio_set_mode( GPIO_CS, GPIO_Pin_CS, GPIO_OUTPUT_PP );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_SCK, GPIO_AF_OUTPUT_PP );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MOSI, GPIO_AF_OUTPUT_PP );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MISO, GPIO_OUTPUT_PP );
 
   /*GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_CS;
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
@@ -493,8 +493,11 @@ static void power_on (void)
   SPI_InitStructure.SPI_CRCPolynomial = 7; */
 
   // This handles GPIO setup on SCK, MISO and MOSI
-  spi_init( SPI_SD, SPI_SLOW_PRESCALER, SPI_MSBFIRST, 0x0 );
+  spi_init( SPI_SD );
 
+  // TODO this needs to be worked out...
+  spi_master_enable( SPI_SD, SPI_MODE_0, SPI_SLOW_PRESCALER, SPI_FRAME_MSB );
+  
   /*SPI_Init(SPI_SD, &SPI_InitStructure); */
   /*SPI_CalculateCRC(SPI_SD, DISABLE); */
   /*SPI_Cmd(SPI_SD, ENABLE); */
@@ -530,10 +533,10 @@ static void power_off (void)
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPD;
   GPIO_Init(GPIO_SPI_SD, &GPIO_InitStructure); */
 
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_SCK, GPIO_MODE_INPUT_PD );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MOSI, GPIO_MODE_INPUT_PD );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MISO, GPIO_MODE_INPUT_PD );
-  gpio_set_mode( GPIO_CS, GPIO_Pin_CS, GPIO_MODE_INPUT_PD );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_SCK, GPIO_INPUT_PD );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MOSI, GPIO_INPUT_PD );
+  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MISO, GPIO_INPUT_PD );
+  gpio_set_mode( GPIO_CS, GPIO_Pin_CS, GPIO_INPUT_PD );
 
   card_power(0);
 
