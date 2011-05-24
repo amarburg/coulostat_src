@@ -5,12 +5,11 @@
 //  (SerialUSB or Serial2) before compiling and then enter 'h' at the prompt
 //  for a list of commands.
 
+#include "main.h"
+#include "libmaple.h"
 #include "wirish.h"
 
 #include "my_systick.h"
-#include "main.h"
-#include "nokia6100.h"
-#include "s1d15g00.h"
 
 #include "term_io.h"
 
@@ -18,9 +17,10 @@
 #include "buttons.h"
 #include "my_adc.h"
 
-#include "ui.h"
-
-#include "fonts.h"
+#include "nokia_lcd/nokia6100.h"
+#include "nokia_lcd/s1d15g00.h"
+#include "ui/ui.h"
+#include "ui/fonts.h"
 
 #define LED_PIN 13
 #define PWM_PIN  2

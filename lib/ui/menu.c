@@ -1,6 +1,6 @@
 
 #include <stdlib.h>
-#include "s1d15g00.h"
+#include "gfx.h"
 #include "fonts.h"
 
 #include "main.h"
@@ -67,8 +67,8 @@ static const menu_item_t root_item_info = {
     .next = &root_item2
   };
 
-static const menu_item_t *current_item = &root_item1, 
-                   *top_of_screen_item = &root_item1,
+static menu_item_t *current_item = &root_item1, 
+                   *const top_of_screen_item = &root_item1,
                    *current_menu = &root_item1,
                    *up_menu   = NULL,
                    *up_menu_last = NULL,
@@ -168,7 +168,7 @@ void refresh_menu( unsigned int keys )
   y_offset = get_y_offset();
 
   if( do_redraw == true ) {
-    LCDSetRect(y_offset,0,132,132,FILL,MENU_BG);
+    GfxSetRect(y_offset,0,132,132,FILL,MENU_BG);
 
     this_item = top_of_screen_item;
 
@@ -176,9 +176,9 @@ void refresh_menu( unsigned int keys )
     for( ; (i < num_items()) && this_item != NULL; i++ ) {
 
       if( this_item == current_item ) 
-        LCDPutStr( this_item->text, y_offset, MENU_X, MENU_FONT, MENU_HIGHLIGHT_FG, MENU_HIGHLIGHT_BG );
+        GfxPutStr( this_item->text, y_offset, MENU_X, MENU_FONT, MENU_HIGHLIGHT_FG, MENU_HIGHLIGHT_BG );
       else
-        LCDPutStr( this_item->text, y_offset, MENU_X, MENU_FONT, MENU_FG, MENU_BG );
+        GfxPutStr( this_item->text, y_offset, MENU_X, MENU_FONT, MENU_FG, MENU_BG );
 
       y_offset += LINE_HEIGHT;
       this_item = this_item->next;

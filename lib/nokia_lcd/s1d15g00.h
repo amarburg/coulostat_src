@@ -34,31 +34,9 @@
 #ifndef _S1D15G00_H_
 #define _S1D15G00_H_
 
-// backlight control 
-#define BKLGHT_LCD_ON 1 
-#define BKLGHT_LCD_OFF 2 
- 
-// Booleans 
-#define NOFILL 0 
-#define FILL 1 
- 
-// 12-bit color definitions 
-#define WHITE 0xFFF 
-#define BLACK 0x000 
-#define RED 0xF00 
-#define GREEN 0x0F0 
-#define BLUE 0x00F 
-#define CYAN 0x0FF 
-#define MAGENTA 0xF0F 
-#define YELLOW 0xFF0 
-#define BROWN 0xB22 
-#define ORANGE 0xFA0 
-#define PINK 0xF6A 
- 
 
-// Define LCD-NOKIA6610 PinIO Interface Mask Bit  
- 
-// End of Define For LCD-NOKIA6610 
+#include "ui/gfx.h"
+
 
 #ifndef BIT0
 // mask definitions 
@@ -97,23 +75,13 @@
 #endif
 
 
-#define LCD_WIDTH 132
-#define LCD_HEIGHT 132
 
 #ifdef __cplusplus
 extern "C"{
 #endif
 
-void InitLcd(void);
-void LCDClearScreen(void);
-void LCDSetPixel(int x, int y, int color);
-void LCDSetLine(int x0, int y0, int x1, int y1, int color);
-void LCDSetRect(int x0, int y0, int x1, int y1, unsigned char fill, int color); 
-void LCDSetCircle(int x0, int y0, int radius, int color); 
-int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor); 
-void LCDPutStr(const char *pString, int x, int y, int Size, int fColor, int bColor); 
-
-extern inline void LCDFillScreen( int color );
+// s1d15g00 largely provides functions defined in the gfx.h API
+// any functions declared here are in addition to that API
 
 #ifdef __cplusplus
 }

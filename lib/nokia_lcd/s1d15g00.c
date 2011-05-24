@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 /* @file s1d15g00.c
- * @brief Graphics driver Epson S1D15G00 LCD controller
+ * @brief Graphics driver Epson S1D15G00 Gfx controller
  *
  * Lifted heavily from James Lynch's August 30 2007 code.
  *
@@ -33,10 +33,10 @@
 
 // lcd.c 
 // 
-// Nokia 6610 LCD Display Driver (Epson S1D15G00 Controller) 
+// Nokia 6610 Gfx Display Driver (Epson S1D15G00 Controller) 
 // 
-// Controller used for LCD Display is a Epson S1D15G00 driver 
-// Note: For Olimex SAM7-EX256 boards with the G8 decal or the Sparkfun Color LCD 128x128 Nokia Knock-Off 
+// Controller used for Gfx Display is a Epson S1D15G00 driver 
+// Note: For Olimex SAM7-EX256 boards with the G8 decal or the Sparkfun Color Gfx 128x128 Nokia Knock-Off 
 // 
 // 
 // We will use a 132 x 132 pixel matrix - each pixel has 12 bits of color information. 
@@ -86,22 +86,23 @@
 // 
 // The Nokia 6610 display uses a SPI serial interface (9 bits) 
 // 
-// PA2 = LCD Reset (set to low to reset) 
-// PA12 = LCD chip select (set to low to select the LCD chip) 
-// PA16 = SPI0_MISO Master In - Slave Out (not used in Olimex SAM7-EX256 LCD interface) 
-// PA17 = SPI0_MOSI Master Out - Slave In pin (Serial Data to LCD slave) 
-// PA18 = SPI0_SPCK Serial Clock (to LCD slave) 
+// PA2 = Gfx Reset (set to low to reset) 
+// PA12 = Gfx chip select (set to low to select the LCD chip) 
+// PA16 = SPI0_MISO Master In - Slave Out (not used in Olimex SAM7-EX256 Gfx interface) 
+// PA17 = SPI0_MOSI Master Out - Slave In pin (Serial Data to Gfx slave) 
+// PA18 = SPI0_SPCK Serial Clock (to Gfx slave) 
 // 
 // SPI baud rate set to MCK/2 = 48054841/3 = 16018280 baud 
 // (period = 62 nsec, OK since 50 nsec period is min for S1D15G00) 
 // 
-// The important thing to note is that you CANNOT read from the LCD! 
+// The important thing to note is that you CANNOT read from the Gfx! 
 // 
 // 
 // Author: James P Lynch August 30, 2007 
 // *************************************************************************************************************** 
 
 /*== Start user-configurable bits ==*/
+#include "s1d15g00.h"
 #include "nokia6100.h"
 #include "my_delay.h"
 /* This code assumes a micro-specific driver will provide the functions 
@@ -115,9 +116,9 @@ extern void delay( unsigned long ms );
 
 #include "term_io.h"
  
-#include "s1d15g00.h"
 
-#include "fonts.h"
+#include "ui/fonts.h"
+
 // Provides ASSERT(..)
 #include <util.h>
 
@@ -162,13 +163,13 @@ extern void delay( unsigned long ms );
 // ***************************************************************************** 
 // InitLcd.c 
 // 
-// Initializes the Epson S1D15G00 LCD Controller 
+// Initializes the Epson S1D15G00 Gfx Controller 
 // 
 // Inputs: none 
 // 
 // Author: James P Lynch August 30, 2007 
 // ***************************************************************************** 
-void InitLcd(void)  
+void GfxInit(void)  
 {
   LcdReset();
 
@@ -214,7 +215,7 @@ void InitLcd(void)
 } 
  
 // ***************************************************************************** 
-// LCDWrite130x130bmp.c 
+// GfxWrite130x130bmp.c 
 // 
 // Writes the entire screen from a bmp file 
 // Uses Olimex BmpToArray.exe utility 
@@ -223,7 +224,7 @@ void InitLcd(void)
 // 
 // Author: Olimex, James P Lynch August 30, 2007 
 // ***************************************************************************** 
-void LCDWrite130x130bmp( unsigned char * image)  
+void GfxWrite130x130bmp( unsigned char * image)  
 { 
   long j; // loop counter 
  
@@ -264,15 +265,15 @@ void LCDWrite130x130bmp( unsigned char * image)
 } 
  
 // ***************************************************************************** 
-// LCDClearScreen.c 
+// GfxClearScreen.c 
 // 
-// Clears the LCD screen to single color (BLACK) 
+// Clears the Gfx screen to single color (BLACK) 
 // 
 // Inputs: none 
 // 
 // Author: James P Lynch August 30, 2007 
 // ***************************************************************************** 
-void LCDClearScreen(void)  
+void GfxClearScreen(void)  
 { 
   long i; // loop counter 
  
@@ -296,11 +297,11 @@ void LCDClearScreen(void)
   } 
 } 
  
-inline void LCDFillScreen( int color ) 
-  { LCDSetRect( 0,0,LCD_WIDTH,LCD_HEIGHT, FILL, color ); }
+inline void GfxFillScreen( int color ) 
+  { GfxSetRect( 0,0,LCD_WIDTH,LCD_HEIGHT, FILL, color ); }
  
 // ************************************************************************************* 
-// LCDSetPixel.c 
+// GfxSetPixel.c 
 // 
 // Lights a single pixel in the specified color at the specified x and y addresses 
 // 
@@ -325,7 +326,7 @@ inline void LCDFillScreen( int color )
 // 
 // Author: James P Lynch August 30, 2007 
 // ************************************************************************************* 
-void LCDSetPixel(int x, int y, int color)  
+void GfxSetPixel(int x, int y, int color)  
 { 
   // Row address set (command 0x2B) 
   WriteSpiCommand(PASET); 
@@ -345,7 +346,7 @@ void LCDSetPixel(int x, int y, int color)
 } 
  
 // ************************************************************************************************* 
-// LCDSetLine.c 
+// GfxSetLine.c 
 // 
 // Draws a line in the specified color from (x0,y0) to (x1,y1) 
 // 
@@ -376,7 +377,7 @@ void LCDSetPixel(int x, int y, int color)
 // http://www.cs.unc.edu/~mcmillan/comp136/Lecture6/Lines.html 
 // 
 // ************************************************************************************************* 
-void LCDSetLine(int x0, int y0, int x1, int y1, int color)  
+void GfxSetLine(int x0, int y0, int x1, int y1, int color)  
 { 
   int dy = y1 - y0; 
   int dx = x1 - x0; 
@@ -385,7 +386,7 @@ void LCDSetLine(int x0, int y0, int x1, int y1, int color)
   if (dx < 0) { dx = -dx; stepx = -1; } else { stepx = 1; } 
   dy <<= 1; // dy is now 2*dy 
   dx <<= 1; // dx is now 2*dx 
-  LCDSetPixel(x0, y0, color); 
+  GfxSetPixel(x0, y0, color); 
   if (dx > dy)  
   { 
     int fraction = dy - (dx >> 1); // same as 2*dy - dx 
@@ -398,7 +399,7 @@ void LCDSetLine(int x0, int y0, int x1, int y1, int color)
       } 
       x0 += stepx; 
       fraction += dy; // same as fraction -= 2*dy 
-      LCDSetPixel(x0, y0, color); 
+      GfxSetPixel(x0, y0, color); 
     } 
   }  
   else  
@@ -413,13 +414,13 @@ void LCDSetLine(int x0, int y0, int x1, int y1, int color)
       } 
       y0 += stepy; 
       fraction += dx; 
-      LCDSetPixel(x0, y0, color); 
+      GfxSetPixel(x0, y0, color); 
     } 
   } 
 } 
  
 // ***************************************************************************************** 
-// LCDSetRect.c 
+// GfxSetRect.c 
 // 
 // Draws a rectangle in the specified color from (x1,y1) to (x2,y2) 
 // Rectangle can be filled with a color if desired 
@@ -495,7 +496,7 @@ void LCDSetLine(int x0, int y0, int x1, int y1, int color)
 // 
 // Author: James P Lynch August 30, 2007 
 // ***************************************************************************************** 
-void LCDSetRect(int x0, int y0, int x1, int y1, unsigned char fill, int color)  
+void GfxSetRect(int x0, int y0, int x1, int y1, unsigned char fill, int color)  
 { 
   int xmin, xmax, ymin, ymax; 
   int i; 
@@ -537,15 +538,15 @@ void LCDSetRect(int x0, int y0, int x1, int y1, unsigned char fill, int color)
   else  
   { 
     // best way to draw un unfilled rectangle is to draw four lines 
-    LCDSetLine(x0, y0, x1, y0, color); 
-    LCDSetLine(x0, y1, x1, y1, color); 
-    LCDSetLine(x0, y0, x0, y1, color); 
-    LCDSetLine(x1, y0, x1, y1, color); 
+    GfxSetLine(x0, y0, x1, y0, color); 
+    GfxSetLine(x0, y1, x1, y1, color); 
+    GfxSetLine(x0, y0, x0, y1, color); 
+    GfxSetLine(x1, y0, x1, y1, color); 
   } 
 } 
  
 // ************************************************************************************* 
-// LCDSetCircle.c 
+// GfxSetCircle.c 
 // 
 // Draws a line in the specified color at center (x0,y0) with radius 
 // 
@@ -562,17 +563,17 @@ void LCDSetRect(int x0, int y0, int x1, int y1, unsigned char fill, int color)
 // http://www.wikipedia.org 
 // 
 // ************************************************************************************* 
-void LCDSetCircle(int x0, int y0, int radius, int color)  
+void GfxSetCircle(int x0, int y0, int radius, int color)  
 { 
   int f = 1 - radius; 
   int ddF_x = 0; 
   int ddF_y = -2 * radius; 
   int x = 0; 
   int y = radius; 
-  LCDSetPixel(x0, y0 + radius, color); 
-  LCDSetPixel(x0, y0 - radius, color); 
-  LCDSetPixel(x0 + radius, y0, color); 
-  LCDSetPixel(x0 - radius, y0, color); 
+  GfxSetPixel(x0, y0 + radius, color); 
+  GfxSetPixel(x0, y0 - radius, color); 
+  GfxSetPixel(x0 + radius, y0, color); 
+  GfxSetPixel(x0 - radius, y0, color); 
   while(x < y)  
   { 
     if(f >= 0)  
@@ -584,19 +585,19 @@ void LCDSetCircle(int x0, int y0, int radius, int color)
     x++; 
     ddF_x += 2; 
     f += ddF_x + 1; 
-    LCDSetPixel(x0 + x, y0 + y, color); 
-    LCDSetPixel(x0 - x, y0 + y, color); 
-    LCDSetPixel(x0 + x, y0 - y, color); 
-    LCDSetPixel(x0 - x, y0 - y, color); 
-    LCDSetPixel(x0 + y, y0 + x, color); 
-    LCDSetPixel(x0 - y, y0 + x, color); 
-    LCDSetPixel(x0 + y, y0 - x, color); 
-    LCDSetPixel(x0 - y, y0 - x, color); 
+    GfxSetPixel(x0 + x, y0 + y, color); 
+    GfxSetPixel(x0 - x, y0 + y, color); 
+    GfxSetPixel(x0 + x, y0 - y, color); 
+    GfxSetPixel(x0 - x, y0 - y, color); 
+    GfxSetPixel(x0 + y, y0 + x, color); 
+    GfxSetPixel(x0 - y, y0 + x, color); 
+    GfxSetPixel(x0 + y, y0 - x, color); 
+    GfxSetPixel(x0 - y, y0 - x, color); 
   } 
 } 
  
 // ***************************************************************************** 
-// LCDPutChar.c 
+// GfxPutChar.c 
 // 
 // Draws an ASCII character at the specified (x,y) address and color 
 // 
@@ -611,7 +612,7 @@ void LCDSetCircle(int x0, int y0, int radius, int color)
 // 
 // Notes: Here's an example to display "E" at address (20,20) 
 // 
-// LCDPutChar('E', 20, 20, MEDIUM, WHITE, BLACK); 
+// GfxPutChar('E', 20, 20, MEDIUM, WHITE, BLACK); 
 // 
 // (27,20) (27,27) 
 // | | 
@@ -634,7 +635,7 @@ void LCDSetCircle(int x0, int y0, int radius, int color)
 // 
 // 
 // The most efficient way to display a character is to make use of the "wrap-around" feature 
-// of the Epson S1D16G00 LCD controller chip. 
+// of the Epson S1D16G00 Gfx controller chip. 
 // 
 // Assume that we position the character at (20, 20) that's a (row, col) specification. 
 // With the row and column address set commands, you can specify an 8x8 box for the SMALL and MEDIUM 
@@ -670,7 +671,7 @@ void LCDSetCircle(int x0, int y0, int radius, int color)
 // 
 // Author: James P Lynch August 30, 2007 
 // ***************************************************************************** 
-int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)  
+int GfxPutChar(char c, int x, int y, int size, int fColor, int bColor)  
 { 
   extern const unsigned char FONT6x8[97][8]; 
   extern const unsigned char FONT8x8[97][8]; 
@@ -692,7 +693,7 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
 
   // Space is a special case
   if( c == ' ' ) {
-    LCDSetRect( x, y, 
+    GfxSetRect( x, y, 
         x+font->heightPixels, y+font->spacePixels,
         FILL, bColor );
     return font->spacePixels;
@@ -743,7 +744,7 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
   // WRITE MEMORY 
   WriteSpiCommand(RAMWR); 
 
-  // The LCD factory fonts are stored upside down, so we can step
+  // The Gfx factory fonts are stored upside down, so we can step
   // forward through the rows and still from bottom to top...
 
   // In inverted page (row) addressing mode, I think it's starting from
@@ -752,7 +753,7 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
   // or "negative" in the inverted frame of reference.
   // So it's writing the _top_ row of the font then wrapping around 
   // and starting at the bottom.
-  // The "right" way is to flip the LCD around.  The wrong way (as 
+  // The "right" way is to flip the Gfx around.  The wrong way (as 
   // shown here is to push out a blank row first
   // Another option would be to shift all of the rows in the font by one
   // but that would be hard to undo...
@@ -826,7 +827,7 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
 } 
  
 // ************************************************************************************************* 
-// LCDPutStr.c 
+// GfxPutStr.c 
 // 
 // Draws a null-terminates character string at the specified (x,y) address, size and color 
 // 
@@ -842,12 +843,12 @@ int LCDPutChar(char c, int x, int y, int size, int fColor, int bColor)
 // 
 // Notes: Here's an example to display "Hello World!" at address (20,20) 
 // 
-// LCDPutChar("Hello World!", 20, 20, LARGE, WHITE, BLACK); 
+// GfxPutChar("Hello World!", 20, 20, LARGE, WHITE, BLACK); 
 // 
 // 
 // Author: James P Lynch August 30, 2007 
 // ************************************************************************************************* 
-void LCDPutStr(const char *pString, int x, int y, int Size, int fColor, int bColor)  
+void GfxPutStr(const char *pString, int x, int y, int Size, int fColor, int bColor)  
 { 
   int c_width;
 
@@ -855,10 +856,10 @@ void LCDPutStr(const char *pString, int x, int y, int Size, int fColor, int bCol
   while (*pString != 0x00)  
   { 
     // draw the character 
-    c_width = LCDPutChar(*pString++, x, y, Size, fColor, bColor); 
+    c_width = GfxPutChar(*pString++, x, y, Size, fColor, bColor); 
 
     if( c_width < 0 ) {
-//      debug_print("LCD error printing \"");
+//      debug_print("Gfx error printing \"");
 //      debug_putc( *(pString-1) );
 //      debug_println("\"");
       // take action

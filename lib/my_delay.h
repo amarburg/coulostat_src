@@ -8,6 +8,9 @@
 extern "C" {
 #endif
 
+  // These functions are lifted straight from the wirish_time.[hc] 
+  // files in libmaple.  I just wanted them to be in the C namespace
+
 void delay(unsigned long ms);
 void delayMicroseconds(uint32_t us);
 

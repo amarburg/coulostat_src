@@ -42,8 +42,8 @@
 #include "libmaple.h"
 #include "gpio.h"
 #include "spi.h"
-#include "ffconf.h"
-#include "diskio.h"
+#include "fat_fs/ffconf.h"
+#include "fat_fs/diskio.h"
 #include "main.h"
 
 // demo uses a command line option to define this (see Makefile):

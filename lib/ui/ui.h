@@ -5,7 +5,6 @@
 #include <stdbool.h>
 
 #include "fonts.h"
-#include "s1d15g00.h"
 
 #ifdef __cplusplus
 extern "C" {

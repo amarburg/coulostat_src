@@ -1,22 +1,22 @@
-PROJECT_OBJS = $(BUILD_PATH)/nokia6100.o \
-	       $(BUILD_PATH)/s1d15g00.o \
+PROJECT_OBJS = $(BUILD_PATH)/lib/nokia_lcd/nokia6100.o \
+	       $(BUILD_PATH)/lib/nokia_lcd/s1d15g00.o \
 	       $(BUILD_PATH)/my_adc.o \
-	       $(BUILD_PATH)/ui.o \
-	       $(BUILD_PATH)/ui/file_browser.o \
-	       $(BUILD_PATH)/ui/menu.o \
-	       $(BUILD_PATH)/ui/info.o \
-	       $(BUILD_PATH)/ui/adc.o \
-	       $(BUILD_PATH)/sd_power.o \
 	       $(BUILD_PATH)/my_systick.o \
 	       $(BUILD_PATH)/buttons.o \
-	       $(BUILD_PATH)/fonts.o \
-	       $(BUILD_PATH)/my_delay.o \
+	       $(BUILD_PATH)/lib/ui/ui.o \
+	       $(BUILD_PATH)/lib/ui/file_browser.o \
+	       $(BUILD_PATH)/lib/ui/menu.o \
+	       $(BUILD_PATH)/lib/ui/info.o \
+	       $(BUILD_PATH)/lib/ui/adc.o \
+	       $(BUILD_PATH)/lib/ui/fonts.o \
+	       $(BUILD_PATH)/lib/sd_power.o \
+	       $(BUILD_PATH)/lib/my_delay.o \
 	       $(BUILD_PATH)/lib/term_io.o \
-	       $(BUILD_PATH)/fs/ff.o \
-	       $(BUILD_PATH)/fs/fattime.o \
-	       $(BUILD_PATH)/fs/sd_spi_stm32.o \
+	       $(BUILD_PATH)/lib/fat_fs/ff.o \
+	       $(BUILD_PATH)/lib/fat_fs/fattime.o \
+	       $(BUILD_PATH)/lib/fat_driver/sd_spi_stm32.o \
 	
-CFLAGS += -I. -I$(TOP_LEVEL)/lib -Ifs -DUSER_PROVIDES_SYSTICK_HANDLER
+CFLAGS += -I. -I$(TOP_LEVEL)/lib -DUSER_PROVIDES_SYSTICK_HANDLER
 
 # I believe this overrides a maple-provided rule
 # 

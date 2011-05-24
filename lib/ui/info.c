@@ -20,7 +20,7 @@ static const char *info_strings[] =
 void draw_info_screen( unsigned int keys )
 {
   int i = 0;
-  unsigned int xoffset = LCD_WIDTH;
+  unsigned int xoffset = Gfx_WIDTH;
 
   if( keys & (BTN_GREEN | BTN_RED) ) {
     current_app_state = DO_HALF_MENU;
@@ -29,11 +29,11 @@ void draw_info_screen( unsigned int keys )
   }
 
   if( do_redraw ) {
-    LCDFillScreen( MENU_BG );
+    GfxFillScreen( MENU_BG );
     for( i = 0; (i < FULL_MENU_NUM_ITEMS)&&(info_strings[i]!=NULL); i++ ) {
-      xoffset = (LCD_WIDTH - 8 * strlen(info_strings[i])) >> 1;
+      xoffset = (Gfx_WIDTH - 8 * strlen(info_strings[i])) >> 1;
 
-      LCDPutStr( info_strings[i], i*LINE_HEIGHT, xoffset, MENU_FONT, MENU_FG, MENU_BG );
+      GfxPutStr( info_strings[i], i*LINE_HEIGHT, xoffset, MENU_FONT, MENU_FG, MENU_BG );
     }
   }
 
