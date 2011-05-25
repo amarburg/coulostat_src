@@ -14,5 +14,6 @@ MENU_ITEM_SUBMENU ("Settings", settings)
 MENU_END
 
 MENU_DEFINE( "Settings", settings )
+MENU_ITEM_ACTION ("Setting1", test1_do )
 MENU_END
 

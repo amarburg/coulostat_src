@@ -25,75 +25,56 @@ typedef struct menu_struct
     menu_item_t *items;
     uint8_t size;
     uint8_t index;
-    uint8_t top;
+//    uint8_t top;
     struct menu_struct *parent;
 } menu_t;
 
 
 /* Move to previous menu item.  */
-//extern void
-//menu_prev (void);
+extern void menu_prev (void);
 
 
 /* Move to next menu item.  */
-//extern void
-//menu_next (void);
-//
-//
-///* Go to selected menu item.  */
-//extern void 
-//menu_goto (int index);
-//
-//
-///* Select current menu item.  */
-//extern void
-//menu_select (void);
-//
-//
-///* Quit current menu and return to parent menu.  */
-//extern void
-//menu_quit (void);
-//
-//
-///* Display a new menu with prompt at last position.  */
-//extern bool
-//menu_display (menu_t *menu);
-//
-//
-///* Display a new menu with prompt at top.  */
-//extern bool
-//menu_display_top (menu_t *menu);
-//
-//
-///* Display current menu.  */
-//extern void
-//menu_show (void);
-//
-//
+extern void menu_next (void);
+
+
+/* Go to selected menu item.  */
+extern void menu_goto (int index);
+
+
+/* Select current menu item.  */
+extern void menu_select (void);
+
+/* Navigate into a submenu */
+extern bool switch_menu( menu_t *menu );
+
+
+/* Quit current menu and return to parent menu.  */
+extern void menu_quit (void);
+
 ///* Get current index for menu; useful for saving menu options.  */
-//static inline uint8_t
-//menu_index_get (menu_t *menu)
-//{
-//    return menu->index;
-//}
+static inline uint8_t menu_index_get (menu_t *menu)
+{
+    return menu->index;
+}
+
 //
-//
-//static inline const char *
-//menu_title_get (menu_t *menu)
-//{
-//    return menu->title;
-//}
-//
-//
-//static inline const char *
-//menu_item_name_get (menu_t *menu, int item)
-//{
-//    return menu->items[item].name;
-//}
-//
-//
-///* Set current index for menu and execute action; useful for restoring
-//   menu options.  */
+static inline const char *menu_title_get (menu_t *menu)
+{
+    return menu->title;
+}
+
+
+static inline const char *menu_item_name_get (menu_t *menu, int item)
+{
+    return menu->items[item].name;
+}
+
+menu_t *get_current_menu( void );
+
+
+/* Set current index for menu and execute action; useful for restoring
+   menu options.  */
 //extern void
 //menu_index_set (menu_t *menu, uint8_t index);
 //
