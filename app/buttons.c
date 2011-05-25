@@ -2,6 +2,8 @@
 #include "libmaple.h"
 #include "gpio.h"
 #include "buttons.h"
+#include "main.h"
+
 
 volatile unsigned char key_state;
 volatile unsigned char key_pressed;
@@ -75,4 +77,15 @@ unsigned char get_key_pressed( void )
 {
   return key_pressed;
 }
+
+void button_press_debug( unsigned char keys )
+{
+  if( keys & BTN_UP ) debug_println("up");
+  if( keys & BTN_DOWN ) debug_println("down");
+  if( keys & BTN_LEFT ) debug_println("left");
+  if( keys & BTN_RIGHT ) debug_println("right");
+  if( keys & BTN_GREEN ) debug_println("green");
+  if( keys & BTN_RED ) debug_println("red");
+}
+
 

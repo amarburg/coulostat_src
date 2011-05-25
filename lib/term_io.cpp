@@ -2,6 +2,8 @@
 #include <wirish.h>
 #include "term_io.h"
 
+#include "main.h"
+
 // Compatibility wrappers with Martin Thomas' term_io functions for now
 void debug_print( const char *c )
 {

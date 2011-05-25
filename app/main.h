@@ -19,6 +19,9 @@ extern "C" {
 
   extern bool init_complete;
 
+#define COMM SerialUSB
+#define DEBUG Serial1
+
 #ifdef __cplusplus
 }
 #endif

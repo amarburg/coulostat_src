@@ -1,0 +1,18 @@
+/** @file   menus.def
+    @author M. P. Hayes, UCECE
+    @date   24 December 2010
+    @brief  Menus for Treetap7.
+
+    Menuing code based heavily on Michael Hayes' Treetap7 code.
+*/
+
+/* Put default at top of menu.  */
+
+MENU_DEFINE ("Main", main)
+MENU_ITEM_ACTION ("Test1", test1_do )
+MENU_ITEM_SUBMENU ("Settings", settings)
+MENU_END
+
+MENU_DEFINE( "Settings", settings )
+MENU_END
+

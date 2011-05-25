@@ -18,10 +18,12 @@ extern "C" {
 
   void button_init( void );
 void button_debounce_timerproc( void );
-unsigned char button_get_keypress( unsigned char key_mask );
+unsigned char button_get_keypress( unsigned char button_mask );
 
-unsigned char get_key_state( void );
-unsigned char get_key_pressed( void );
+unsigned char get_button_state( void );
+unsigned char get_button_pressed( void );
+
+void button_press_debug( unsigned char keys );
 
 #ifdef __cplusplus
 }

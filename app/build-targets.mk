@@ -3,6 +3,7 @@ PROJECT_OBJS = $(BUILD_PATH)/lib/nokia_lcd/nokia6100.o \
 	       $(BUILD_PATH)/my_adc.o \
 	       $(BUILD_PATH)/my_systick.o \
 	       $(BUILD_PATH)/buttons.o \
+	       $(BUILD_PATH)/console.o \
 	       $(BUILD_PATH)/lib/ui/ui.o \
 	       $(BUILD_PATH)/lib/ui/file_browser.o \
 	       $(BUILD_PATH)/lib/ui/menu.o \
@@ -16,7 +17,7 @@ PROJECT_OBJS = $(BUILD_PATH)/lib/nokia_lcd/nokia6100.o \
 	       $(BUILD_PATH)/lib/fat_fs/fattime.o \
 	       $(BUILD_PATH)/lib/fat_driver/sd_spi_stm32.o \
 	
-CFLAGS += -I. -I$(TOP_LEVEL)/lib -DUSER_PROVIDES_SYSTICK_HANDLER
+CFLAGS += -I. -I$(TOP_LEVEL)/lib -DUSER_PROVIDES_SYSTICK_HANDLER 
 
 # I believe this overrides a maple-provided rule
 # 
@@ -27,6 +28,11 @@ $(BUILD_PATH)/%.o: %.c
 $(BUILD_PATH)/%.o: %.cpp
 	@mkdir -p $(dir $(@:%.o=%.d))
 	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+	
+# This contains the auto-generated menuing code, so save the preprocessor output
+$(BUILD_PATH)/console.o: console.cpp
+	@mkdir -p $(dir $(@:%.o=%.d))
+	$(SILENT_CXX) $(CXX) $(CFLAGS) -save-temps $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
 	
 $(BUILD_PATH)/lib/%.o: $(TOP_LEVEL)/lib/%.c
 	@mkdir -p $(dir $(@:%.o=%.d))

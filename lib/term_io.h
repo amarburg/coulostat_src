@@ -1,10 +1,5 @@
-
-
 #ifndef __TERM_IO_H__
 #define __TERM_IO_H__
-
-#define COMM SerialUSB
-#define DEBUG Serial1
 
 #ifdef __cplusplus
 extern "C" {
