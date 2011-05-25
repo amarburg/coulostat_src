@@ -18,13 +18,13 @@
 typedef enum {MENU_STYLE_ROTATE, MENU_STYLE_SCROLL} menu_style_t;
 
 #define MENU_ITEM(NAME, ACTION) {NAME, ACTION}
-#define MENU(NAME, MENU_ITEMS) {NAME, MENU_ITEMS, ARRAY_SIZE (MENU_ITEMS), 0, 0, 0}
+#define MENU(NAME, MENU_ITEMS) {NAME, MENU_ITEMS, ARRAY_SIZE (MENU_ITEMS), 0, 0}
 
 
 #define MENU_DEFINE(TITLE, NAME) 
 #define MENU_END 
 #define MENU_ITEM_ACTION(NAME, ACTION) \
-static bool ACTION (void);
+bool ACTION (void);
 #define MENU_ITEM_SUBMENU(NAME, SUBMENU) \
 static bool SUBMENU ## _menu_do (void);
 
@@ -79,6 +79,7 @@ static menu_t NAME ## _menu = MENU (TITLE, NAME ## _menu_items);
 #define MENU_ITEM_SUBMENU(NAME, SUBMENU)  \
 static bool SUBMENU ## _menu_do (void)    \
 {                                         \
+  switch_menu( &SUBMENU ## _menu);        \
     return true; /*menu_display (&SUBMENU ## _menu);*/   \
 }
 

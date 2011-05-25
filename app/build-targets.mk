@@ -4,6 +4,7 @@ PROJECT_OBJS = $(BUILD_PATH)/lib/nokia_lcd/nokia6100.o \
 	       $(BUILD_PATH)/my_systick.o \
 	       $(BUILD_PATH)/buttons.o \
 	       $(BUILD_PATH)/console.o \
+	       $(BUILD_PATH)/console_menu/menus.o \
 	       $(BUILD_PATH)/lib/ui/ui.o \
 	       $(BUILD_PATH)/lib/ui/file_browser.o \
 	       $(BUILD_PATH)/lib/ui/menu.o \
@@ -30,7 +31,7 @@ $(BUILD_PATH)/%.o: %.cpp
 	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
 	
 # This contains the auto-generated menuing code, so save the preprocessor output
-$(BUILD_PATH)/console.o: console.cpp
+$(BUILD_PATH)/console_menu/menus.o: console_menu/menus.cpp
 	@mkdir -p $(dir $(@:%.o=%.d))
 	$(SILENT_CXX) $(CXX) $(CFLAGS) -save-temps $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
 	

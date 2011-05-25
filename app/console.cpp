@@ -12,15 +12,12 @@
 #include "sd_power.h"
 
 
-#include "console_menu/menus.h"
-
 enum ConsoleState_t {
   CONSOLE_TOP
 };
 static ConsoleState_t consoleState = CONSOLE_TOP;
 
-static menu_t *current_menu = &main_menu;
-
+// Various menu callbacks
 bool test1_do( void )
 {
   return true;
