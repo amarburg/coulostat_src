@@ -23,7 +23,7 @@
 #include "ui/ui.h"
 #include "ui/fonts.h"
 
-#include "max1303/coulo_adc.h"
+#include "coulo_adc/coulo_adc.h"
 
 #define LED_PIN 13
 #define PWM_PIN  2

@@ -3,14 +3,13 @@
 #include "spi.h"
 #include "gpio.h"
 #include "rcc.h"
-#include "timers.h"
+#include "timer.h"
 
 #include "max1303.h"
 
 /* - for SPI1 and full-speed APB2: 72MHz/4 */
-#define MAX1303_SPI_PRESCALER  CR1_BR_PRESCALE_8
+#define MAX1303_SPI_PRESCALER  SPI_BAUD_PCLK_DIV_8
 
-#define spi_xmit( b )    spi_tx_byte( MAX1303_SPI, b )
 typedef enum {DISABLE = 0, ENABLE = !DISABLE} FunctionalState;
 
 #define RCC_APB2Periph_SPI1              ((uint32_t)0x00001000)
@@ -21,36 +20,15 @@ typedef enum {DISABLE = 0, ENABLE = !DISABLE} FunctionalState;
 #define CR2_TXDMAEN   0x00000002
 #define CR2_RXDMAEN   0x00000001
 
-typedef struct spi_dev {
-  SPI *base;
-  GPIO_Port *port;
-  uint8 sck_pin;
-  uint8 miso_pin;
-  uint8 mosi_pin;
-} spi_dev;
 
-static const spi_dev spi_dev1 = {
-  .base     = (SPI*)SPI1_BASE,
-  .port     = GPIOA_BASE,
-  .sck_pin  = 5,
-  .miso_pin = 6,
-  .mosi_pin = 7
-};
+static uint8_t spi_xmit( uint8_t val )
+{
+  while( !spi_is_tx_empty( MAX1303_SPI )) { ; }
+  spi_tx_reg( MAX1303_SPI, val );
 
-static const spi_dev spi_dev2 = {
-  .base     = (SPI*)SPI2_BASE,
-  .port     = GPIOB_BASE,
-  .sck_pin  = 13,
-  .miso_pin = 14,
-  .mosi_pin = 15
-};
-
-static void spi_gpio_cfg(const spi_dev *dev) {
-  gpio_set_mode(dev->port, dev->sck_pin, GPIO_MODE_AF_OUTPUT_PP);
-  gpio_set_mode(dev->port, dev->miso_pin, GPIO_MODE_AF_OUTPUT_PP);
-  gpio_set_mode(dev->port, dev->mosi_pin, GPIO_MODE_AF_OUTPUT_PP);
+  while( !spi_is_rx_reg_nonempty( MAX1303_SPI ) ) {;}
+  return spi_rx_ref( MAX1303_SPI ) & 0x00FF;
 }
-
 
 void max1303_init( void )
 {
@@ -58,52 +36,23 @@ void max1303_init( void )
 
   /* Configure I/O for Flash Chip select */
   /*!!AMM investigate the 50MHz flag... */
-  gpio_set_mode( MAX1303_CS_BASE, MAX1303_CS, GPIO_MODE_OUTPUT_PP );
+  gpio_set_mode( MAX1303_CS_BASE, MAX1303_CS, GPIO_OUTPUT_PP );
   // Other pins are handled by spi_init(...)
 
     /* De-select the Card: Chip Select high */
   MAX1303_DESELECT();
   
-  // This handles GPIO setup on SCK, MISO and MOSI
-  // Mode = 0x00 means CPOL = 0, CPHA = 0
- // spi_init( MAX1303_SPI, MAX1303_SPI_PRESCALER, SPI_MSBFIRST, 0x0 );
-
   timer_set_mode(TIMER3, 2, TIMER_DISABLED);
   timer_set_mode(TIMER3, 1, TIMER_DISABLED);
 
-
-  uint32 spi_num = MAX1303_SPI;
-  uint32 prescale = MAX1303_SPI_PRESCALER;
-  uint32 endian = SPI_MSBFIRST;
-  uint32 mode = 0;
-
-  SPI *spi;
-  uint32 cr1 = 0;
-
-  spi->CR1 &= ~(CR1_SPE);
-
-  switch (spi_num) {
-    case 1:
-      /* limit to 18 mhz max speed  */
-      ASSERT(prescale != CR1_BR_PRESCALE_2);
-      spi = (SPI*)SPI1_BASE;
-      //rcc_clk_enable(RCC_SPI1);
-      //rcc_reset_dev(RCC_SPI1);
-      spi_gpio_cfg(&spi_dev1);
-      break;
-    case 2:
-      spi = (SPI*)SPI2_BASE;
-      //rcc_clk_enable(RCC_SPI2);
-      spi_gpio_cfg(&spi_dev2);
-      break;
-  }
-
-  cr1 = prescale | endian | mode | CR1_MSTR | CR1_SSI | CR1_SSM;
-  spi->CR1 = cr1;
-  spi->CR2 &= ~(CR2_TXEIE | CR2_RXNEIE | CR2_ERRIE | CR2_TXDMAEN | CR2_RXDMAEN);
-
-  /* Peripheral enable */
-  spi->CR1 |= CR1_SPE;
+  // This handles GPIO setup on SCK, MISO and MOSI
+  // Mode = 0x00 means CPOL = 0, CPHA = 0
+  spi_init( MAX1303_SPI );
+  spi_irq_disable( MAX1303_SPI, SPI_INTERRUPTS_ALL );
+  spi_tx_dma_disable( MAX1303_SPI );
+  spi_rx_dma_disable( MAX1303_SPI );
+  spi_master_enable( MAX1303_SPI, MAX1303_SPI_PRESCALER, SPI_MODE_0,
+      SPI_FRAME_MSB );
 
   /* drain SPI */
 //  dummyread = spi_rx( MAX1303_SPI );

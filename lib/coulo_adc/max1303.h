@@ -34,12 +34,12 @@
 
 // Hardware configuration
 //
-#define MAX1303_CS_BASE   GPIOB_BASE
+#define MAX1303_CS_BASE   GPIOB
 #define MAX1303_CS        8
 
-#define MAX1303_SPI       1
+#define MAX1303_SPI       SPI1
 
-#define MAX1303_SPI_BASE  GPIOA_BASE
+#define MAX1303_SPI_BASE  GPIOA
 #define MAX1303_SPI_SCK   5
 #define MAX1303_SPI_MISO  6
 #define MAX1303_SPI_MOSI  7
