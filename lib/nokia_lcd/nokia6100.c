@@ -31,7 +31,7 @@
 #include "nvic.h"
 #include "usart.h"
 #include "gpio.h"
-#include "timer.h"
+#include "timers.h"
 
 /* header files from wirish */
 #include "time.h"
