@@ -9,7 +9,7 @@
 volatile uint32 systick_count = 0;
 
 //void SysTickHandler(void) __attribute__ ((long_call, section (".ramsection")));
-void __exc_systick(void) {
+void my_systick(void) {
   if( init_complete == true ) {
     if( (systick_count % 50) == 0 ) button_debounce_timerproc();
 
@@ -25,5 +25,10 @@ void __exc_systick(void) {
 uint32 get_systick_count( void )
 {
   return systick_count;
+}
+
+void init_systick( void )
+{
+  systick_attach_callback( my_systick );
 }
 

@@ -64,6 +64,8 @@ void setup() {
   GfxSetRect(0,0,132,132,FILL,BLACK);
 
   coulo_adc_init();
+  
+  init_systick();
 
   // For 16x8 font, should get 8 rows and 16 columns
   //for( row = 0; row < 8; row++ )
