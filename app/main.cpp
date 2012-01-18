@@ -6,6 +6,8 @@
 //  for a list of commands.
 
 #include "main.h"
+#include "hw_config.h"
+
 #include "libmaple.h"
 #include "wirish.h"
 
@@ -25,7 +27,6 @@
 
 #include "coulo_adc/coulo_adc.h"
 
-#define LED_PIN 13
 #define PWM_PIN  2
 
 uint8 input = 0;
