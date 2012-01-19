@@ -6,6 +6,8 @@
 //  for a list of commands.
 
 #include "main.h"
+#include "hw_config.h"
+
 #include "libmaple.h"
 #include "wirish.h"
 
@@ -23,9 +25,8 @@
 #include "ui/ui.h"
 #include "ui/fonts.h"
 
-#include "max1303/coulo_adc.h"
+#include "coulo_adc/coulo_adc.h"
 
-#define LED_PIN 13
 #define PWM_PIN  2
 
 uint8 input = 0;
@@ -66,6 +67,8 @@ void setup() {
   GfxSetRect(0,0,132,132,FILL,BLACK);
 
   coulo_adc_init();
+  
+  init_systick();
 
   // For 16x8 font, should get 8 rows and 16 columns
   //for( row = 0; row < 8; row++ )

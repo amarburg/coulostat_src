@@ -17,6 +17,8 @@ PROJECT_OBJS = $(BUILD_PATH)/lib/nokia_lcd/nokia6100.o \
 	       $(BUILD_PATH)/lib/fat_fs/ff.o \
 	       $(BUILD_PATH)/lib/fat_fs/fattime.o \
 	       $(BUILD_PATH)/lib/fat_driver/sd_spi_stm32.o \
+	       $(BUILD_PATH)/lib/coulo_adc/coulo_adc.o \
+	       $(BUILD_PATH)/lib/coulo_adc/max1303.o
 	
 CFLAGS += -I. -I$(TOP_LEVEL)/lib -DUSER_PROVIDES_SYSTICK_HANDLER 
 

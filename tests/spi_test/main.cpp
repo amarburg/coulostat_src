@@ -34,36 +34,47 @@
 
 #include "wirish.h"
 
-#define CS      D14     // D14 == B8
+#define CS      D14     // D14 == PB8
+
+#define LED_PIN D25     // D25 == PD2
+uint8 toggle = 0;
+uint8 count = 0;
 
 byte buf[] = "Hello world!";
 
-//HardwareSPI spi1(1);
+HardwareSPI spi1(1);
 
 void setup() {
-    Serial1.begin(115200);
-    Serial1.println("Test test");
-    Serial1.println("Test");
+  Serial1.begin(115200);
+  Serial1.println("Start of setup...");
 
-   /* Set up chip select as output  */
-   //pinMode(CS, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
 
-   /* CS is usually active low, so initialize it high  */
-   //digitalWrite(CS, HIGH);
 
-   /* Initialize SPI   */
-//   spi1.begin(SPI_4_5MHZ, MSBFIRST, 0);
-    Serial1.println("Setup end");
+  /* Set up chip select as output  */
+  pinMode(CS, OUTPUT);
+
+  /* CS is usually active low, so initialize it high  */
+  digitalWrite(CS, HIGH);
+
+  /* Initialize SPI   */
+  spi1.begin(SPI_4_5MHZ, MSBFIRST, 0);
+  Serial1.println("Setup end");
 }
 
 void loop() {
-  Serial1.println("Loop!");
+  //Serial1.println("Loop!");
+  Serial1.println( count++ );
 
-   /* Send message  */
-//   digitalWrite(CS, LOW);
-//   spi1.send(buf, sizeof buf);
-//   digitalWrite(CS,HIGH);
-   delay(1000);
+  toggle ^= 1;
+  digitalWrite(LED_PIN, toggle);
+
+
+  /* Send message  */
+  digitalWrite(CS, LOW);
+  spi1.send(buf, sizeof buf);
+  digitalWrite(CS,HIGH);
+  delay(1000);
 }
 
 // Force init to be called *first*, i.e. before static object allocation.

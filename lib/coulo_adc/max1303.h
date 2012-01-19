@@ -34,12 +34,13 @@
 
 // Hardware configuration
 //
-#define MAX1303_CS_BASE   GPIOB_BASE
+#define MAX1303_CS_BASE   GPIOB
 #define MAX1303_CS        8
 
-#define MAX1303_SPI       1
+#define MAX1303_SPI       SPI1
 
-#define MAX1303_SPI_BASE  GPIOA_BASE
+// This is provided in wirish, but not  at the C level.  Why not?
+#define MAX1303_SPI_BASE  GPIOA
 #define MAX1303_SPI_SCK   5
 #define MAX1303_SPI_MISO  6
 #define MAX1303_SPI_MOSI  7
@@ -92,7 +93,7 @@ extern void max1303_partial_power_down( void );
 extern void max1303_full_power_down( void );
 extern void max1303_wake( void );
 
-extern uint16_t max1303_acq_external_clock( unsigned char chan );
+extern int8_t max1303_acq_external_clock( unsigned char chan, uint16_t *data );
 
 #define MAX1303_SELECT()         gpio_write_bit( MAX1303_CS_BASE, MAX1303_CS, 0 ) 
 #define MAX1303_DESELECT()       gpio_write_bit( MAX1303_CS_BASE, MAX1303_CS, 1 ) 

@@ -1,6 +1,6 @@
-PROJECT_OBJS = 
-	
-CFLAGS += -I. -Ifs -DUSER_PROVIDES_SYSTICK_HANDLER
+PROJECT_OBJS = 	
+
+CFLAGS += -I. -I$(TOP_LEVEL)/lib 
 
 # I believe this overrides a maple-provided rule
 # 
@@ -11,6 +11,20 @@ $(BUILD_PATH)/%.o: %.c
 $(BUILD_PATH)/%.o: %.cpp
 	@mkdir -p $(dir $(@:%.o=%.d))
 	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+	
+# This contains the auto-generated menuing code, so save the preprocessor output
+$(BUILD_PATH)/console_menu/menus.o: console_menu/menus.cpp
+	@mkdir -p $(dir $(@:%.o=%.d))
+	$(SILENT_CXX) $(CXX) $(CFLAGS) -save-temps $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+	
+$(BUILD_PATH)/lib/%.o: $(TOP_LEVEL)/lib/%.c
+	@mkdir -p $(dir $(@:%.o=%.d))
+	$(SILENT_CC) $(CC) $(CFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+
+$(BUILD_PATH)/lib/%.o: $(TOP_LEVEL)/lib/%.cpp
+	@mkdir -p $(dir $(@:%.o=%.d))
+	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+
 
 # main project target
 $(BUILD_PATH)/main.o: main.cpp 

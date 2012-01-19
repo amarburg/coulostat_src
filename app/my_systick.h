@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+void init_systick( void );
 uint32 get_systick_count( void );
 
 #ifdef __cplusplus

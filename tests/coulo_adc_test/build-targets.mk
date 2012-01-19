@@ -1,7 +1,7 @@
-PROJECT_OBJS = $(BUILD_PATH)/../../coulostat/max1303/max1303.o \
-	       $(BUILD_PATH)/../../coulostat/max1303/coulo_adc.o
+PROJECT_OBJS = $(BUILD_PATH)/../../lib/coulo_adc/max1303.o \
+	       $(BUILD_PATH)/../../lib/coulo_adc/coulo_adc.o
 	
-CFLAGS += -I. -Ifs -DUSER_PROVIDES_SYSTICK_HANDLER
+CFLAGS += -I$(TOP_LEVEL)/lib -I. 
 
 # I believe this overrides a maple-provided rule
 # 
