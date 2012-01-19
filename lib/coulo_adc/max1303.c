@@ -1,14 +1,17 @@
 
+#include <stdbool.h>
+
 #include "libmaple.h"
 #include "spi.h"
 #include "gpio.h"
 #include "rcc.h"
 #include "timer.h"
 
+#include "hw_config.h"
 #include "max1303.h"
 
 /* - for SPI1 and full-speed APB2: 72MHz/4 */
-#define MAX1303_SPI_PRESCALER  SPI_BAUD_PCLK_DIV_32
+#define MAX1303_SPI_PRESCALER  SPI_BAUD_PCLK_DIV_64
 
 
 static uint8_t spi_xmit( uint8_t val )
@@ -81,31 +84,40 @@ void max1303_wake( void )               { max1303_mode_config( MAX1303_MODE ); }
 // For the second byte, no read or write
 // For the third and fourth bytes you clock 16 bits back in
 
-static volatile uint8 tx_count;
-static volatile uint8 rx_count;
-static volatile uint32 max1303_data;
-static volatile uint8 completed_acq;
+volatile uint8 tx_count;
+volatile uint8 rx_count;
+//volatile uint32 max1303_data;
+volatile uint8 max1303_data[4];
+volatile bool completed_acq;
 
+// Had problems with IRQ basically firing continuously at PRESCALE_32
 // Handle it with IRQs
 void __irq_spi1( void )
 {
   // First byte is sent manually, only need to send three filler bytes.
-  if( spi_is_tx_empty( MAX1303_SPI ) && tx_count < 10 ) {
-    spi_tx_reg( MAX1303_SPI, rx_count );
+  if( spi_is_tx_empty( MAX1303_SPI ) ) {
+    if( tx_count < 3 )
+      spi_tx_reg( MAX1303_SPI, 0x00 );
+
+    if( tx_count >= 2 ) 
+      spi_irq_disable( MAX1303_SPI, SPI_TXE_INTERRUPT );
+
     ++tx_count;
   }
 
   if( spi_is_rx_nonempty( MAX1303_SPI )) {
-     max1303_data |= spi_rx_reg( MAX1303_SPI );
-     if( rx_count < 3 ) max1303_data = (max1303_data << 8) & 0xFFFFFF00;
+     //max1303_data |= spi_rx_reg( MAX1303_SPI );
+     if( rx_count < 4 )
+       max1303_data[rx_count] = spi_rx_reg( MAX1303_SPI ) & 0x000000FF;
+
      ++rx_count;
 
-     if( rx_count > 3 ) { completed_acq = 1; }
+     if( rx_count > 3 ) { completed_acq = true; }
   }
 
 }
 
-#define MAX1303_ACQ_TIMEOUT   3
+#define MAX1303_ACQ_TIMEOUT   100
 int8_t max1303_acq_external_clock( unsigned char chan, uint16_t *data )
 {
   uint16_t timeout = 0;
@@ -117,8 +129,8 @@ int8_t max1303_acq_external_clock( unsigned char chan, uint16_t *data )
   // Initialize and arm the IRQ
   tx_count = 0;
   rx_count = 0;
-  max1303_data = 0x0000;
-  completed_acq = 0;
+  max1303_data[0] = max1303_data[1] = max1303_data[2] = max1303_data[3] = 0;
+  completed_acq = false;
 
   MAX1303_SELECT();
 
@@ -129,17 +141,20 @@ int8_t max1303_acq_external_clock( unsigned char chan, uint16_t *data )
   spi_tx_reg( MAX1303_SPI, 0x80 | (chan & MAX1303_CHAN_MASK)  );
 
   spi_irq_enable( MAX1303_SPI, SPI_TXE_INTERRUPT | SPI_RXNE_INTERRUPT );
-  while( 0==completed_acq ) {
+  while( !completed_acq ) {
     if( (timeout++) > MAX1303_ACQ_TIMEOUT) {
       retval = -1; goto cleanup; 
     } 
   }
 
+//  completed_acq = 255;
+
 cleanup:
   spi_irq_disable( MAX1303_SPI, SPI_INTERRUPTS_ALL );
   MAX1303_DESELECT();
 
-  (*data) = max1303_data;
+  (*data) = max1303_data[2]<<8 | max1303_data[3];
+  //(*data) = max1303_data;
 
   return retval;
 }
