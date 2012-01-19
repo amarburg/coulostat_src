@@ -7,12 +7,12 @@ void coulo_adc_init( void )
   max1303_init();
 
   // Configure MAX1303
-//  max1303_mode_config( MODE_RESET );
-//  max1303_analog_input_config( MAX1303_CHAN0, SE_PLUS_MINUS_VREF );
-//  max1303_analog_input_config( MAX1303_CHAN1, SE_PLUS_MINUS_VREF );
-//  max1303_analog_input_config( MAX1303_CHAN2, SE_PLUS_MINUS_VREF );
-//  max1303_analog_input_config( MAX1303_CHAN3, SE_PLUS_MINUS_VREF );
-//  max1303_mode_config( MAX1303_MODE );
+  max1303_mode_config( MODE_RESET );
+  max1303_analog_input_config( MAX1303_CHAN0, SE_PLUS_MINUS_VREF );
+  max1303_analog_input_config( MAX1303_CHAN1, SE_PLUS_MINUS_VREF );
+  max1303_analog_input_config( MAX1303_CHAN2, SE_PLUS_MINUS_VREF );
+  max1303_analog_input_config( MAX1303_CHAN3, SE_PLUS_MINUS_VREF );
+  max1303_mode_config( MAX1303_MODE );
 }
 
 // Hm, embarrassing?
@@ -29,6 +29,8 @@ void coulo_adc_read( unsigned char chans, uint16_t *results )
   for( b = 0; b < 4; b++ ) {
     if( chans & (0x01 << b) ) {
       results[b] = max1303_acq_external_clock( chan_to_chan(b) );
+    } else {
+      results[b] = 0;
     }
   }
 

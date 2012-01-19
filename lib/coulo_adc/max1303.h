@@ -39,6 +39,7 @@
 
 #define MAX1303_SPI       SPI1
 
+// This is provided in wirish, but not  at the C level.  Why not?
 #define MAX1303_SPI_BASE  GPIOA
 #define MAX1303_SPI_SCK   5
 #define MAX1303_SPI_MISO  6
