@@ -46,7 +46,7 @@ void max1303_init( void )
 
 
   spi_master_enable( MAX1303_SPI, MAX1303_SPI_PRESCALER, 
-                     SPI_MODE_0, SPI_FRAME_MSB | SPI_DFF_8_BIT | SPI_SW_SLAVE | SPI_SOFT_SS );
+                     SPI_MODE_0, SPI_FRAME_MSB | SPI_DFF_8_BIT );
 
   /* drain SPI */
   spi_rx_reg( MAX1303_SPI );
@@ -81,64 +81,65 @@ void max1303_wake( void )               { max1303_mode_config( MAX1303_MODE ); }
 // For the second byte, no read or write
 // For the third and fourth bytes you clock 16 bits back in
 
-volatile uint8 tx_count;
-volatile uint8 rx_count;
-volatile uint16 max1303_data;
-volatile uint8 completed_acq;
+static volatile uint8 tx_count;
+static volatile uint8 rx_count;
+static volatile uint32 max1303_data;
+static volatile uint8 completed_acq;
 
 // Handle it with IRQs
 void __irq_spi1( void )
 {
-  if( spi_is_tx_empty( MAX1303_SPI ) && tx_count < 4 ) {
-    spi_tx_reg( MAX1303, 0x00 );
+  // First byte is sent manually, only need to send three filler bytes.
+  if( spi_is_tx_empty( MAX1303_SPI ) && tx_count < 10 ) {
+    spi_tx_reg( MAX1303_SPI, rx_count );
     ++tx_count;
   }
 
   if( spi_is_rx_nonempty( MAX1303_SPI )) {
-     data |= spi_rx_reg( MAX1303_SPI );
-     if( rx_count == 0 ) data <<= 8;
-     rx_count++;
+     max1303_data |= spi_rx_reg( MAX1303_SPI );
+     if( rx_count < 3 ) max1303_data = (max1303_data << 8) & 0xFFFFFF00;
+     ++rx_count;
 
-     if( rx_count == 2 ) completed_acq = 1;
+     if( rx_count > 3 ) { completed_acq = 1; }
   }
 
 }
 
-uint16_t max1303_acq_external_clock( unsigned char chan )
+#define MAX1303_ACQ_TIMEOUT   3
+int8_t max1303_acq_external_clock( unsigned char chan, uint16_t *data )
 {
-  uint16_t data = 0xAAAA;
-
-  MAX1303_SELECT();
-
+  uint16_t timeout = 0;
+  int8_t retval = 0;
+  
   // Drain read register
   spi_rx_reg( MAX1303_SPI );
 
+  // Initialize and arm the IRQ
+  tx_count = 0;
+  rx_count = 0;
+  max1303_data = 0x0000;
+  completed_acq = 0;
+
+  MAX1303_SELECT();
+
   // Write first byte
-  while( !spi_is_tx_empty( MAX1303_SPI )) { ; }
+  while( !spi_is_tx_empty( MAX1303_SPI )) { 
+    if( (timeout++) > MAX1303_ACQ_TIMEOUT ) { retval = -2; goto cleanup; } }
+  timeout = 0;
   spi_tx_reg( MAX1303_SPI, 0x80 | (chan & MAX1303_CHAN_MASK)  );
 
-  // Write second byte, read first reply (0)
-  while( !spi_is_tx_empty( MAX1303_SPI )) { ; }
-  spi_xmit( 0x0 );
-  while( !spi_is_rx_nonempty( MAX1303_SPI ) ) {;}
-  spi_rx_reg(MAX1303_SPI );
+  spi_irq_enable( MAX1303_SPI, SPI_TXE_INTERRUPT | SPI_RXNE_INTERRUPT );
+  while( 0==completed_acq ) {
+    if( (timeout++) > MAX1303_ACQ_TIMEOUT) {
+      retval = -1; goto cleanup; 
+    } 
+  }
 
-  // Write third byte, read second reply (0)
-  while( !spi_is_tx_empty( MAX1303_SPI )) { ; }
-  spi_xmit( 0x0 );
-  while( !spi_is_rx_nonempty( MAX1303_SPI ) ) {;}
-  data |= spi_rx_reg(MAX1303_SPI );
-
-  // Write fourth byte, read third reply (high byte)
-  while( !spi_is_tx_empty( MAX1303_SPI )) {  ; }
-  spi_xmit( 0x0 );
-  while( !spi_is_rx_nonempty( MAX1303_SPI ) ) {;}
-  data = (spi_rx_reg(MAX1303_SPI)) << 8;
-
-  // Read fourth reply (low byte)
-  while( !spi_is_rx_nonempty( MAX1303_SPI ) ) {;}
-  data |= spi_rx_reg(MAX1303_SPI );
+cleanup:
+  spi_irq_disable( MAX1303_SPI, SPI_INTERRUPTS_ALL );
   MAX1303_DESELECT();
 
-  return data;
+  (*data) = max1303_data;
+
+  return retval;
 }
