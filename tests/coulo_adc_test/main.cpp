@@ -62,13 +62,21 @@ void loop() {
       case 32:  // ' '
         COMM.println("spacebar, nice!");
         break;
+      case 'A':
+        channel = COULO_ADC_ALL;
       case 'a':
-        COMM.println("Sampling ADC...");
-        retval = coulo_adc_read_blocking( COULO_ADC_ALL, coulo_adc_results );
-        //retval = coulo_adc_read_blocking( COULO_ADC_0, coulo_adc_results );
+        COMM.print("Sampling ADCs: ");
+        if( channel & COULO_ADC_0 ) COMM.print("0 ");
+        if( channel & COULO_ADC_1 ) COMM.print("1 ");
+        if( channel & COULO_ADC_2 ) COMM.print("2 ");
+        if( channel & COULO_ADC_3 ) COMM.print("3 ");
+        COMM.println();
 
-        //retval = coulo_adc_read( channel++, coulo_adc_results );
-        // if( channel & 0x10 ) channel = 0x01;
+        //retval = coulo_adc_read_blocking( COULO_ADC_ALL, coulo_adc_results );
+
+        // Cycle through all of the ADC channels
+        retval = coulo_adc_read_blocking( channel, coulo_adc_results );
+        if( ++channel > COULO_ADC_ALL ) { channel = COULO_ADC_0; }
         
         if( retval != 0 ) {
           COMM.print("Error: ");
@@ -110,7 +118,6 @@ __attribute__(( constructor )) void premain() {
 
 int main(void)
 {
-  unsigned char keys;
   setup();
 
   while (1) {
