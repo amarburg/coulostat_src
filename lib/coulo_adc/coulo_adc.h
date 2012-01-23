@@ -50,6 +50,7 @@ extern "C" {
 #endif
   void coulo_adc_init( void );
   int8_t coulo_adc_read( uint8_t chans, uint16_t *results );
+  int8_t coulo_adc_read_nonblocking( uint8_t chans, uint16_t *results );
 #ifdef __cplusplus
 }
 #endif

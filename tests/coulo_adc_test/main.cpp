@@ -32,7 +32,6 @@ void setup() {
   /* Start up the serial ports */
   Serial1.begin(115200);
   Serial1.println("Test test");
-  //    Serial3.begin(9600);
 
   Serial1.println("Start coulo_adc_init");
   coulo_adc_init();
@@ -42,6 +41,9 @@ void setup() {
 }
 
 void loop() {
+  static uint8_t channel = 0x01;
+  uint16_t coulo_adc_results[4] = { 0,0,0,0 };;
+  int8_t retval;
   uint8 i = 0;
   toggle ^= 1;
   digitalWrite(LED_PIN, toggle);
@@ -62,10 +64,11 @@ void loop() {
         break;
       case 'a':
         COMM.println("Sampling ADC...");
-        uint16_t coulo_adc_results[4];
-        int8_t retval;
         retval = coulo_adc_read( COULO_ADC_ALL, coulo_adc_results );
 
+        //retval = coulo_adc_read( channel++, coulo_adc_results );
+        // if( channel & 0x10 ) channel = 0x01;
+        
         if( retval != 0 ) {
           COMM.print("Error: ");
           COMM.print(retval);

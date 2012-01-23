@@ -92,9 +92,15 @@ extern void max1303_partial_power_down( void );
 extern void max1303_full_power_down( void );
 extern void max1303_wake( void );
 
-extern int8_t max1303_acq_external_clock( uint8_t chans,  uint16_t *data );
-
-extern bool is_acq_completed( void );
+#ifdef __cplusplus
+extern "C" {
+#endif
+  bool is_acq_completed( void );
+  int8_t max1303_acq_external_clock_nonblocking( uint8_t chans,  uint16_t *data );
+  int8_t max1303_acq_external_clock_blocking( uint8_t chans,  uint16_t *data );
+#ifdef __cplusplus
+}
+#endif
 
 #define MAX1303_SELECT()         gpio_write_bit( MAX1303_CS_BASE, MAX1303_CS, 0 ) 
 #define MAX1303_DESELECT()       gpio_write_bit( MAX1303_CS_BASE, MAX1303_CS, 1 ) 

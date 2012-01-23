@@ -15,6 +15,7 @@ extern "C" void systick_attach_callback(void (*callback)(void));
 
 #include "hw_config.h"
 #include "coulo_adc/coulo_adc.h"
+#include "coulo_adc/max1303.h"
 
 uint8 input = 0;
 uint8 toggle = 0;
@@ -25,6 +26,7 @@ typedef struct coulo_adc_record {
 } coulo_adc_record_t;
 
 #define BUFFER_LENGTH   256
+volatile uint32 buffer_count;
 static struct coulo_adc_record buffer[BUFFER_LENGTH];
 
 volatile uint32 systick_count = 0;
@@ -35,7 +37,8 @@ void my_systick(void)
 {
   systick_count++;
   if( do_sample == true ) {
-    trigger_sample = true;
+    buffer[buffer_count].milliseconds = systick_count;
+    coulo_adc_read_nonblocking(  COULO_ADC_ALL, buffer[buffer_count].adc_results );
   }
 }
 
@@ -82,21 +85,16 @@ void loop() {
         break;
       case 'a':
         COMM.println("Sampling ADC BUFFER_LENGTH times...");
-        int8_t retval;
 
         i = 0;
-        systick_count = 0;
+        buffer_count = 0;
         do_sample = true;
-        while( i < BUFFER_LENGTH ) {
+
+        while( !is_acq_completed() ) {
           toggle ^= 1;
           digitalWrite(LED_PIN, toggle);
-          while( trigger_sample == false ) { delay_us(1);}
-          trigger_sample = false;
 
-          buffer[i].milliseconds = systick_count;
-          retval = coulo_adc_read( COULO_ADC_ALL, buffer[i].adc_results );
-          i++;
-          if( retval < 0 ) break;
+          delay_us(10);
         }
         do_sample = false;
 
@@ -134,7 +132,6 @@ __attribute__(( constructor )) void premain() {
 
 int main(void)
 {
-  unsigned char keys;
   setup();
 
   while (1) {
