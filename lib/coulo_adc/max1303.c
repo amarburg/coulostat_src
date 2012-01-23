@@ -92,7 +92,7 @@ volatile uint8 channel_mask;
 
 volatile uint8 tx_count;
 volatile uint8 rx_count;
-volatile uint8 *max1303_data;
+volatile uint16 *max1303_data;
 volatile bool completed_acq;
 volatile bool tx_complete;
 
@@ -103,6 +103,8 @@ inline void start_conversion( uint8_t chan ) {
 // Had problems with IRQ basically firing continuously at PRESCALE_32
 void __irq_spi1( void )
 {
+  register uint8_t rx;
+
   if( spi_is_tx_empty( MAX1303_SPI ) && channel < 4 )  {
     if( (tx_count & 0x03) == 0 ) {
       while( (((0x01 << ++channel) & channel_mask) == 0) && (channel <= 3) ) { ; }
@@ -120,14 +122,17 @@ void __irq_spi1( void )
   }
 
   if( spi_is_rx_nonempty( MAX1303_SPI )) {
+    rx = spi_rx_reg( MAX1303_SPI ) & 0x000000FF;
+
     if ( rx_count & 0x02 ) {
-      max1303_data[ (rx_count & 0x01) | ( (rx_count & 0xFC) >> 1) ] = spi_rx_reg( MAX1303_SPI ) & 0x000000FF;
-    } else {
-      spi_rx_reg( MAX1303_SPI );
-    }
+      if( rx_count & 0x01 )
+        max1303_data[ (rx_count & 0xFC) >> 2 ] |= rx; 
+      else
+        max1303_data[ (rx_count & 0xFC) >> 2 ] = rx << 8;
+    } 
     ++rx_count;
 
-  if (rx_count >= tx_count)  {
+    if (rx_count >= tx_count)  {
       completed_acq = true;
       spi_irq_disable( MAX1303_SPI, SPI_INTERRUPTS_ALL );
       MAX1303_DESELECT();
@@ -153,7 +158,6 @@ int8_t max1303_acq_external_clock_nonblocking( uint8_t chans,  uint16_t *data )
 {
   uint16_t timeout = 0;
   int8_t retval = 0;
-  uint8_t i;
   
   // Drain read register
   spi_rx_reg( MAX1303_SPI );
@@ -165,11 +169,9 @@ int8_t max1303_acq_external_clock_nonblocking( uint8_t chans,  uint16_t *data )
   completed_acq = false;
   channel_mask = chans;
   channel = 0;
-  max1303_data = (uint8_t *)data;
+  max1303_data = data;
 
-  while( ((0x01 << channel) & chans) == 0 ) {
-    if( ++channel > 3 ) return 0;
-  }
+  while( ((0x01 << channel) & chans) == 0 ) { if( ++channel > 3 ) return 0; }
 
   MAX1303_SELECT();
 
