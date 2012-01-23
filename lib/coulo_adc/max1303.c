@@ -19,7 +19,7 @@ static uint8_t spi_xmit( uint8_t val )
   uint8 retval = 0;
 
   // Follows the procedure from the reference manual RM0008 pp 665
-  //while( !spi_is_tx_empty( MAX1303_SPI )) { ; }
+  while( !spi_is_tx_empty( MAX1303_SPI )) { ; }
   spi_tx_reg( MAX1303_SPI, val );
 
   while( !spi_is_rx_nonempty( MAX1303_SPI ) ) {;}
@@ -56,9 +56,9 @@ void max1303_init( void )
   spi_master_enable( MAX1303_SPI, MAX1303_SPI_PRESCALER, 
                      SPI_MODE_0, SPI_FRAME_MSB | SPI_DFF_8_BIT );
 
-  /* drain SPI */
-//  spi_rx_reg( MAX1303_SPI );
-//  spi_tx_reg( MAX1303_SPI, 0x00 );
+  /* Try to reset SPI to a known state... */
+  spi_rx_reg( MAX1303_SPI );
+  spi_tx_reg( MAX1303_SPI, 0x00 );
 }
 
 void max1303_mode_config( unsigned char mode )
@@ -186,10 +186,10 @@ int8_t max1303_acq_external_clock_nonblocking( uint8_t chans, uint8_t oversample
 
   MAX1303_SELECT();
 
-  while( !spi_is_tx_empty( MAX1303_SPI )) { 
-    delay_us(1);
-    if( (timeout++) > MAX1303_ACQ_TIMEOUT ) { retval = -2; goto cleanup; } 
-  }
+  //while( !spi_is_tx_empty( MAX1303_SPI )) { 
+  //  delay_us(1);
+  //  if( (timeout++) > MAX1303_ACQ_TIMEOUT ) { retval = -2; goto cleanup; } 
+  //}
   start_conversion( channel );
   spi_irq_enable( MAX1303_SPI, SPI_TXE_INTERRUPT | SPI_RXNE_INTERRUPT );
 
