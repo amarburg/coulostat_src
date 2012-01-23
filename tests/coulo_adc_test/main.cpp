@@ -42,7 +42,7 @@ void setup() {
 
 void loop() {
   static uint8_t channel = 0x01;
-  uint16_t coulo_adc_results[4] = { 0,0,0,0 };;
+  uint16_t coulo_adc_results[4] = { 0,0,0,0 };
   int8_t retval;
   uint8 i = 0;
   toggle ^= 1;
@@ -64,7 +64,8 @@ void loop() {
         break;
       case 'a':
         COMM.println("Sampling ADC...");
-        retval = coulo_adc_read( COULO_ADC_ALL, coulo_adc_results );
+        retval = coulo_adc_read_blocking( COULO_ADC_ALL, coulo_adc_results );
+        //retval = coulo_adc_read_blocking( COULO_ADC_0, coulo_adc_results );
 
         //retval = coulo_adc_read( channel++, coulo_adc_results );
         // if( channel & 0x10 ) channel = 0x01;

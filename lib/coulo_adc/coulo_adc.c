@@ -22,16 +22,12 @@ inline unsigned char chan_to_chan( unsigned char b )
 }
 
 // As a start, just do it all inline
-int8_t coulo_adc_read( uint8_t chans, uint16_t *results )
+int8_t coulo_adc_read_blocking( uint8_t chans, uint16_t *results )
 {
-  int8_t  retval = 0;
-  retval = max1303_acq_external_clock_blocking( chans, results );
-  return retval;
+  return max1303_acq_external_clock_blocking( chans, results );
 }
 
 int8_t coulo_adc_read_nonblocking( uint8_t chans, uint16_t *results )
 {
-  int8_t  retval = 0;
-  retval = max1303_acq_external_clock_nonblocking( chans, results );
-  return retval;
+  return max1303_acq_external_clock_nonblocking( chans, results );
 }

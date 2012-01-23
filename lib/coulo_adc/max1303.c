@@ -33,6 +33,9 @@ void max1303_init( void )
 {
   spi_peripheral_disable( MAX1303_SPI );
 
+  /* De-select the Card: Chip Select high */
+  MAX1303_DESELECT();
+ 
   /* Configure I/O for Flash Chip select */
   /*!!AMM investigate the 50MHz flag... */
   gpio_set_mode( MAX1303_CS_BASE, MAX1303_CS, GPIO_OUTPUT_PP );
@@ -40,9 +43,6 @@ void max1303_init( void )
   gpio_set_mode( MAX1303_SPI_BASE, MAX1303_SPI_MISO, GPIO_INPUT_PD );
   gpio_set_mode( MAX1303_SPI_BASE, MAX1303_SPI_MOSI, GPIO_AF_OUTPUT_PP );
 
-    /* De-select the Card: Chip Select high */
-  MAX1303_DESELECT();
-  
   timer_set_mode(TIMER3, 2, TIMER_DISABLED);
   timer_set_mode(TIMER3, 1, TIMER_DISABLED);
 
@@ -97,43 +97,42 @@ volatile bool completed_acq;
 volatile bool tx_complete;
 
 inline void start_conversion( uint8_t chan ) {
-  spi_tx_reg( MAX1303_SPI, 0x80 | ( chan & MAX1303_CHAN_MASK)  );
+  spi_tx_reg( MAX1303_SPI, 0x80 | ( (chan<<CHANNEL_SHIFT) & MAX1303_CHAN_MASK)  );
 }
 
 // Had problems with IRQ basically firing continuously at PRESCALE_32
-// Handle it with IRQs
 void __irq_spi1( void )
 {
-  // First byte is sent manually, only need to send fifteen filler bytes.
-  if( spi_is_tx_empty( MAX1303_SPI ) ) {
-    if( (0x01 << channel) & channel_mask ) {
-      if( (tx_count++ & 0x03) == 0 ) {
-        start_conversion( ++channel );
-      } else {
-        spi_tx_reg( MAX1303_SPI, 0x00 );
-      }
+  if( spi_is_tx_empty( MAX1303_SPI ) && channel < 4 )  {
+    if( (tx_count & 0x03) == 0 ) {
+      while( (((0x01 << ++channel) & channel_mask) == 0) && (channel <= 3) ) { ; }
 
-      if( channel & 0x08 ) {
+      if( channel > 3 ) {
         spi_irq_disable( MAX1303_SPI, SPI_TXE_INTERRUPT );
-        tx_complete = true;
+      } else {
+        start_conversion( channel );
+        ++tx_count;
       }
+    } else {
+      spi_tx_reg( MAX1303_SPI, 0x00 );
+      ++tx_count;
     }
-
   }
 
   if( spi_is_rx_nonempty( MAX1303_SPI )) {
-    if( !tx_complete ) {
-      max1303_data[rx_count++] = spi_rx_reg( MAX1303_SPI ) & 0x000000FF;
+    if ( rx_count & 0x02 ) {
+      max1303_data[ (rx_count & 0x01) | ( (rx_count & 0xFC) >> 1) ] = spi_rx_reg( MAX1303_SPI ) & 0x000000FF;
     } else {
-      if (rx_count >= tx_count)  {
-        completed_acq = true;
-        spi_irq_disable( MAX1303_SPI, SPI_INTERRUPTS_ALL );
-        MAX1303_DESELECT();
-      }
+      spi_rx_reg( MAX1303_SPI );
     }
+    ++rx_count;
 
+  if (rx_count >= tx_count)  {
+      completed_acq = true;
+      spi_irq_disable( MAX1303_SPI, SPI_INTERRUPTS_ALL );
+      MAX1303_DESELECT();
+    }
   }
-
 }
 
 bool is_acq_completed( void ) { return completed_acq; }
@@ -166,14 +165,21 @@ int8_t max1303_acq_external_clock_nonblocking( uint8_t chans,  uint16_t *data )
   completed_acq = false;
   channel_mask = chans;
   channel = 0;
+  max1303_data = (uint8_t *)data;
+
+  while( ((0x01 << channel) & chans) == 0 ) {
+    if( ++channel > 3 ) return 0;
+  }
 
   MAX1303_SELECT();
 
-  // Write first byte
   while( !spi_is_tx_empty( MAX1303_SPI )) { 
-    delay_us(10);
+    delay_us(1);
     if( (timeout++) > MAX1303_ACQ_TIMEOUT ) { retval = -2; goto cleanup; } 
   }
+  start_conversion( channel );
+  spi_irq_enable( MAX1303_SPI, SPI_TXE_INTERRUPT | SPI_RXNE_INTERRUPT );
+
 
   return 0;
 
