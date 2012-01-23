@@ -1,7 +1,8 @@
 PROJECT_OBJS = $(BUILD_PATH)/../../lib/coulo_adc/max1303.o \
 	       $(BUILD_PATH)/../../lib/coulo_adc/coulo_adc.o
-	
-CFLAGS += -I$(TOP_LEVEL)/lib -I. 
+
+# The BOARD_maple is necessary to convince the system it's really a maple
+CFLAGS += -I$(TOP_LEVEL)/lib -I.  -DBOARD_maple
 
 # I believe this overrides a maple-provided rule
 # 

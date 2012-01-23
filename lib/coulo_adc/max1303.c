@@ -16,15 +16,23 @@
 
 static uint8_t spi_xmit( uint8_t val )
 {
-  while( !spi_is_tx_empty( MAX1303_SPI )) { ; }
+  uint8 retval = 0;
+
+  // Follows the procedure from the reference manual RM0008 pp 665
+  //while( !spi_is_tx_empty( MAX1303_SPI )) { ; }
   spi_tx_reg( MAX1303_SPI, val );
 
   while( !spi_is_rx_nonempty( MAX1303_SPI ) ) {;}
-  return spi_rx_reg( MAX1303_SPI ) & 0x00FF;
+  retval = spi_rx_reg( MAX1303_SPI ) & 0x00FF;
+
+  while( !spi_is_tx_empty( MAX1303_SPI )) { ; }
+  while( spi_is_busy( MAX1303_SPI)) {;}
 }
 
 void max1303_init( void )
 {
+  spi_peripheral_disable( MAX1303_SPI );
+
   /* Configure I/O for Flash Chip select */
   /*!!AMM investigate the 50MHz flag... */
   gpio_set_mode( MAX1303_CS_BASE, MAX1303_CS, GPIO_OUTPUT_PP );
@@ -38,29 +46,24 @@ void max1303_init( void )
   timer_set_mode(TIMER3, 2, TIMER_DISABLED);
   timer_set_mode(TIMER3, 1, TIMER_DISABLED);
 
-  // This handles GPIO setup on SCK, MISO and MOSI
-  // Mode = 0x00 means CPOL = 0, CPHA = 0
   spi_init( MAX1303_SPI );
 
   spi_irq_disable( MAX1303_SPI, SPI_INTERRUPTS_ALL );
   spi_tx_dma_disable( MAX1303_SPI );
   spi_rx_dma_disable( MAX1303_SPI );
 
-
-
+  // Mode = 0x00 means CPOL = 0, CPHA = 0
   spi_master_enable( MAX1303_SPI, MAX1303_SPI_PRESCALER, 
                      SPI_MODE_0, SPI_FRAME_MSB | SPI_DFF_8_BIT );
 
   /* drain SPI */
-  spi_rx_reg( MAX1303_SPI );
+//  spi_rx_reg( MAX1303_SPI );
+//  spi_tx_reg( MAX1303_SPI, 0x00 );
 }
 
-
-
-#define MAX1303_MODE_MASK 0xF8
 void max1303_mode_config( unsigned char mode )
 {
-  unsigned char b = (0x88 | mode) & MAX1303_MODE_MASK;
+  unsigned char b = ((mode & 0x07) << 4) | 0x88;
   MAX1303_SELECT();
   spi_xmit( b );
   MAX1303_DESELECT();
@@ -136,12 +139,14 @@ int8_t max1303_acq_external_clock( unsigned char chan, uint16_t *data )
 
   // Write first byte
   while( !spi_is_tx_empty( MAX1303_SPI )) { 
+    delay_us(10);
     if( (timeout++) > MAX1303_ACQ_TIMEOUT ) { retval = -2; goto cleanup; } }
   timeout = 0;
   spi_tx_reg( MAX1303_SPI, 0x80 | (chan & MAX1303_CHAN_MASK)  );
 
   spi_irq_enable( MAX1303_SPI, SPI_TXE_INTERRUPT | SPI_RXNE_INTERRUPT );
   while( !completed_acq ) {
+    delay_us(1);
     if( (timeout++) > MAX1303_ACQ_TIMEOUT) {
       retval = -1; goto cleanup; 
     } 
@@ -152,6 +157,10 @@ int8_t max1303_acq_external_clock( unsigned char chan, uint16_t *data )
 cleanup:
   spi_irq_disable( MAX1303_SPI, SPI_INTERRUPTS_ALL );
   MAX1303_DESELECT();
+
+  while( spi_is_rx_nonempty( MAX1303_SPI ) ) { spi_rx_reg( MAX1303_SPI ); }
+  while( !spi_is_tx_empty( MAX1303_SPI )) { ; }
+  while( spi_is_busy( MAX1303_SPI)) {;}
 
   (*data) = max1303_data[2]<<8 | max1303_data[3];
   //(*data) = max1303_data;

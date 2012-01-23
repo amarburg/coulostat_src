@@ -27,12 +27,16 @@ int8_t coulo_adc_read( unsigned char chans, uint16_t *results )
   unsigned char b = 0;
   int8_t  retval = 0;
 
+  for( b = 0; b < 4; b++ ) { results[b] = 0; }
+
   for( b = 0; b < 4; b++ ) {
     if( chans & (0x01 << b) ) {
       retval = max1303_acq_external_clock( chan_to_chan(b), &(results[b]) );
-      if( retval != 0 ) return retval;
+      if( retval != 0 ) {
+        results[b] = retval;
+      }
     } else {
-      results[b] = 0;
+      results[b] = 0xFFFF;
     }
   }
 
