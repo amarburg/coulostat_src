@@ -22,23 +22,11 @@ inline unsigned char chan_to_chan( unsigned char b )
 }
 
 // As a start, just do it all inline
-int8_t coulo_adc_read( unsigned char chans, uint16_t *results )
+int8_t coulo_adc_read( uint16_t *results )
 {
-  unsigned char b = 0;
   int8_t  retval = 0;
 
-  for( b = 0; b < 4; b++ ) { results[b] = 0; }
-
-  for( b = 0; b < 4; b++ ) {
-    if( chans & (0x01 << b) ) {
-      retval = max1303_acq_external_clock( chan_to_chan(b), &(results[b]) );
-      if( retval != 0 ) {
-        results[b] = retval;
-      }
-    } else {
-      results[b] = 0xFFFF;
-    }
-  }
+  retval = max1303_acq_external_clock( results );
 
   return retval;
 }
