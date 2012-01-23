@@ -31,14 +31,15 @@ static struct coulo_adc_record buffer[BUFFER_LENGTH];
 
 volatile uint32 systick_count = 0;
 volatile static bool do_sample = false;
-volatile static bool trigger_sample = false;
 
 void my_systick(void)
 {
   systick_count++;
   if( do_sample == true ) {
     buffer[buffer_count].milliseconds = systick_count;
-    coulo_adc_read_nonblocking(  COULO_ADC_ALL, buffer[buffer_count].adc_results );
+    coulo_adc_read_nonblocking(  COULO_ADC_ALL, buffer[buffer_count++].adc_results );
+
+    if( buffer_count >= BUFFER_LENGTH ) do_sample = false;
   }
 }
 
@@ -65,7 +66,6 @@ void setup() {
 }
 
 void loop() {
-  uint16_t i=0;
 
   toggle ^= 1;
   digitalWrite(LED_PIN, toggle);
@@ -86,17 +86,17 @@ void loop() {
       case 'a':
         COMM.println("Sampling ADC BUFFER_LENGTH times...");
 
-        i = 0;
         buffer_count = 0;
         do_sample = true;
 
-        while( !is_acq_completed() ) {
+        while( do_sample ) {
           toggle ^= 1;
           digitalWrite(LED_PIN, toggle);
 
           delay_us(10);
         }
-        do_sample = false;
+
+        COMM.println("Completed...");
 
         /*COMM.println("Results");
         for( i = 0; i < 4; i++ ) {
