@@ -281,7 +281,7 @@ static byte_t stm32_spi_rw( byte_t out )
 
   /* Send byte through the SPI peripheral */
   /*SPI_I2S_SendData(SPI_SD, out); */
-  return spi_tx_byte( SPI_SD, out );
+  //return spi_tx_byte( SPI_SD, out );
 
   /* Wait to receive a byte */
   /*while (SPI_I2S_GetFlagStatus(SPI_SD, SPI_I2S_FLAG_RXNE) == RESET) { ; } */
@@ -289,6 +289,13 @@ static byte_t stm32_spi_rw( byte_t out )
   /* Return the byte read from the SPI bus */
   /*return SPI_I2S_ReceiveData(SPI_SD); */
   //return spi_rx( SPI_SD );
+
+  // Follows the procedure from the reference manual RM0008 pp 665
+  while( !spi_is_tx_empty( SPI_SD )) { ; }
+  spi_tx_reg( SPI_SD, out );
+
+  while( !spi_is_rx_nonempty( SPI_SD ) ) {;}
+  return spi_rx_reg( SPI_SD ) & 0x00FF;
 }
 
 

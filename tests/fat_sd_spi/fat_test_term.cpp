@@ -114,7 +114,7 @@ int fat_menu (void)
   
   // Input buffer handling
   static char linebuf[LINEBUF_LEN];
-  static uint bufcount = 0;
+  static unsigned int bufcount = 0;
   char c;
   bool do_process = false;
 

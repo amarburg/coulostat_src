@@ -1,19 +1,35 @@
 PROJECT_OBJS = $(BUILD_PATH)/fat_test_term.o \
-	       $(BUILD_PATH)/ff.o \
 	       $(BUILD_PATH)/term_io.o \
-	       $(BUILD_PATH)/fattime.o \
-	       $(BUILD_PATH)/sd_spi_stm32.o \
+	       $(BUILD_PATH)/lib/fat_fs/ff.o \
+	       $(BUILD_PATH)/lib/fat_fs/fattime.o \
+	       $(BUILD_PATH)/lib/fat_driver/sd_spi_stm32.o \
 	       $(BUILD_PATH)/my_systick.o 
 
-CFLAGS += -DUSER_PROVIDES_SYSTICK_HANDLER
+CFLAGS += -I. -I$(TOP_LEVEL)/lib -DBOARD_maple
 
 # I believe this overrides a maple-provided rule
 # 
 $(BUILD_PATH)/%.o: %.c
+	@mkdir -p $(dir $(@:%.o=%.d))
 	$(SILENT_CC) $(CC) $(CFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
 	
 $(BUILD_PATH)/%.o: %.cpp
+	@mkdir -p $(dir $(@:%.o=%.d))
 	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+	
+# This contains the auto-generated menuing code, so save the preprocessor output
+$(BUILD_PATH)/console_menu/menus.o: console_menu/menus.cpp
+	@mkdir -p $(dir $(@:%.o=%.d))
+	$(SILENT_CXX) $(CXX) $(CFLAGS) -save-temps $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+	
+$(BUILD_PATH)/lib/%.o: $(TOP_LEVEL)/lib/%.c
+	@mkdir -p $(dir $(@:%.o=%.d))
+	$(SILENT_CC) $(CC) $(CFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+
+$(BUILD_PATH)/lib/%.o: $(TOP_LEVEL)/lib/%.cpp
+	@mkdir -p $(dir $(@:%.o=%.d))
+	$(SILENT_CXX) $(CXX) $(CFLAGS) $(CXXFLAGS) $(LIBMAPLE_INCLUDES) $(WIRISH_INCLUDES)  -MMD -MP -MF $(@:%.o=%.d) -MT $@ -o $@ -c $< 
+
 
 # main project target
 $(BUILD_PATH)/main.o: main.cpp 
