@@ -64,7 +64,7 @@ void loop() {
         COMM.println("Sampling ADC...");
         uint16_t coulo_adc_results[4];
         int8_t retval;
-        retval = coulo_adc_read( coulo_adc_results );
+        retval = coulo_adc_read( COULO_ADC_ALL, coulo_adc_results );
 
         if( retval != 0 ) {
           COMM.print("Error: ");

@@ -49,7 +49,7 @@ typedef uint16_t coulo_adc_result_t[4];
 extern "C" {
 #endif
   void coulo_adc_init( void );
-  int8_t coulo_adc_read( uint16_t *results );
+  int8_t coulo_adc_read( uint8_t chans, uint16_t *results );
 #ifdef __cplusplus
 }
 #endif
