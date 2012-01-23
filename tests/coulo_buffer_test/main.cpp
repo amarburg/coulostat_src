@@ -17,9 +17,7 @@ extern "C" void systick_attach_callback(void (*callback)(void));
 #include "coulo_adc/coulo_adc.h"
 
 uint8 input = 0;
-uint8 tiddle = 0;
 uint8 toggle = 0;
-uint8 loop_count = 0;
 
 typedef struct coulo_adc_record {
   uint16_t milliseconds;
@@ -35,8 +33,8 @@ volatile static bool trigger_sample = false;
 
 void my_systick(void)
 {
-  if( do_sample == true ) {
   systick_count++;
+  if( do_sample == true ) {
     trigger_sample = true;
   }
 }
@@ -69,7 +67,7 @@ void loop() {
   toggle ^= 1;
   digitalWrite(LED_PIN, toggle);
 
-  Serial1.println( loop_count++ );
+  Serial1.println( systick_count );
 
   delay(100);
 
@@ -86,14 +84,18 @@ void loop() {
         COMM.println("Sampling ADC BUFFER_LENGTH times...");
         int8_t retval;
 
+        i = 0;
         systick_count = 0;
         do_sample = true;
         while( i < BUFFER_LENGTH ) {
-          while( trigger_sample == false ) {;}
+          toggle ^= 1;
+          digitalWrite(LED_PIN, toggle);
+          while( trigger_sample == false ) { delay_us(1);}
           trigger_sample = false;
 
           buffer[i].milliseconds = systick_count;
-          retval = coulo_adc_read( COULO_ADC_ALL, buffer[i++].adc_results );
+          retval = coulo_adc_read( COULO_ADC_ALL, buffer[i].adc_results );
+          i++;
           if( retval < 0 ) break;
         }
         do_sample = false;
