@@ -51,6 +51,9 @@ extern "C" {
   void coulo_adc_init( void );
   int8_t coulo_adc_read_blocking( uint8_t chans, uint16_t *results );
   int8_t coulo_adc_read_nonblocking( uint8_t chans, uint16_t *results );
+
+  int8_t coulo_adc_oversample_blocking( uint8_t chans, uint8_t oversample, uint16_t *results );
+  int8_t coulo_adc_oversample_nonblocking( uint8_t chans, uint8_t oversample, uint16_t *results );
 #ifdef __cplusplus
 }
 #endif

@@ -94,7 +94,9 @@ volatile uint8 tx_count;
 volatile uint8 rx_count;
 volatile uint16 *max1303_data;
 volatile bool completed_acq;
-volatile bool tx_complete;
+
+volatile uint8_t oversample;
+volatile uint8_t rep;
 
 inline void start_conversion( uint8_t chan ) {
   spi_tx_reg( MAX1303_SPI, 0x80 | ( (chan<<CHANNEL_SHIFT) & MAX1303_CHAN_MASK)  );
@@ -154,7 +156,7 @@ static void max1303_cleanup( void )
 
 
 #define MAX1303_ACQ_TIMEOUT   100
-int8_t max1303_acq_external_clock_nonblocking( uint8_t chans,  uint16_t *data )
+int8_t max1303_acq_external_clock_nonblocking( uint8_t chans, uint8_t oversample_in, uint16_t *data )
 {
   uint16_t timeout = 0;
   int8_t retval = 0;
@@ -165,11 +167,14 @@ int8_t max1303_acq_external_clock_nonblocking( uint8_t chans,  uint16_t *data )
   // Initialize and arm the IRQ
   tx_count = 1;
   rx_count = 0;
-  tx_complete = false;
   completed_acq = false;
   channel_mask = chans;
   channel = 0;
   max1303_data = data;
+  rep = 0;
+  oversample = oversample_in;
+
+  if( oversample < 1 ) return 0;
 
   while( ((0x01 << channel) & chans) == 0 ) { if( ++channel > 3 ) return 0; }
 
@@ -190,9 +195,9 @@ cleanup:
   return retval;
 }
 
-int8_t max1303_acq_external_clock_blocking( uint8_t chans,  uint16_t *data )
+int8_t max1303_acq_external_clock_blocking( uint8_t chans, uint8_t oversample,  uint16_t *data )
 {
-   int retval = max1303_acq_external_clock_nonblocking( chans, data );
+   int retval = max1303_acq_external_clock_nonblocking( chans, oversample, data );
    if( retval < 0 ) return retval;
 
    while( ! is_acq_completed() ) {

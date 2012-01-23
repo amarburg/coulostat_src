@@ -96,8 +96,8 @@ extern void max1303_wake( void );
 extern "C" {
 #endif
   bool is_acq_completed( void );
-  int8_t max1303_acq_external_clock_nonblocking( uint8_t chans,  uint16_t *data );
-  int8_t max1303_acq_external_clock_blocking( uint8_t chans,  uint16_t *data );
+  int8_t max1303_acq_external_clock_nonblocking( uint8_t chans, uint8_t oversample, uint16_t *data );
+  int8_t max1303_acq_external_clock_blocking( uint8_t chans, uint8_t oversample, uint16_t *data );
 #ifdef __cplusplus
 }
 #endif

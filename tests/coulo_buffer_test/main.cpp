@@ -66,6 +66,7 @@ void setup() {
 }
 
 void loop() {
+  uint16_t i,j;
 
   toggle ^= 1;
   digitalWrite(LED_PIN, toggle);
@@ -98,11 +99,16 @@ void loop() {
 
         COMM.println("Completed...");
 
-        /*COMM.println("Results");
-        for( i = 0; i < 4; i++ ) {
-          COMM.print(coulo_adc_results[i]);
+        COMM.println("Results");
+        for( i = 0; i < BUFFER_LENGTH; i++ ) {
+          COMM.print( buffer[i].milliseconds );
           COMM.print(' ');
-        }*/
+          for( j = 0; j < 4; j++ ) {
+            COMM.print(buffer[i].adc_results[j]);
+            COMM.print(' ');
+          }
+          COMM.println();
+        }
 
         COMM.println("");
         break;

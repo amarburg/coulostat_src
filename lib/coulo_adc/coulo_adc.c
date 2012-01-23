@@ -24,10 +24,21 @@ inline unsigned char chan_to_chan( unsigned char b )
 // As a start, just do it all inline
 int8_t coulo_adc_read_blocking( uint8_t chans, uint16_t *results )
 {
-  return max1303_acq_external_clock_blocking( chans, results );
+  return max1303_acq_external_clock_blocking( chans, 1, results );
 }
 
 int8_t coulo_adc_read_nonblocking( uint8_t chans, uint16_t *results )
 {
-  return max1303_acq_external_clock_nonblocking( chans, results );
+  return max1303_acq_external_clock_nonblocking( chans, 1, results );
+}
+
+// As a start, just do it all inline
+int8_t coulo_adc_oversample_blocking( uint8_t chans, uint8_t oversample, uint16_t *results )
+{
+  return max1303_acq_external_clock_blocking( chans, oversample, results );
+}
+
+int8_t coulo_adc_oversample_nonblocking( uint8_t chans,uint8_t oversample, uint16_t *results )
+{
+  return max1303_acq_external_clock_nonblocking( chans, oversample, results );
 }
