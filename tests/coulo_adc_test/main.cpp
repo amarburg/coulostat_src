@@ -42,9 +42,9 @@ void setup() {
 
 void loop() {
   static uint8_t channel = 0x01;
-  uint16_t coulo_adc_results[4] = { 0,0,0,0 };
+  uint16_t coulo_adc_results[12] = { 0,0,0,0,0,0,0,0,0,0,0,0 };
   int8_t retval;
-  uint8 i = 0;
+  uint8_t i = 0,j = 0;
   toggle ^= 1;
   digitalWrite(LED_PIN, toggle);
 
@@ -62,9 +62,9 @@ void loop() {
       case 32:  // ' '
         COMM.println("spacebar, nice!");
         break;
-      case 'A':
-        channel = COULO_ADC_ALL;
       case 'a':
+        channel = COULO_ADC_ALL;
+      case 'A':
         COMM.print("Sampling ADCs: ");
         if( channel & COULO_ADC_0 ) COMM.print("0 ");
         if( channel & COULO_ADC_1 ) COMM.print("1 ");
@@ -75,7 +75,7 @@ void loop() {
         //retval = coulo_adc_read_blocking( COULO_ADC_ALL, coulo_adc_results );
 
         // Cycle through all of the ADC channels
-        retval = coulo_adc_read_blocking( channel, coulo_adc_results );
+        retval = coulo_adc_oversample_blocking( channel, 3, coulo_adc_results );
         if( ++channel > COULO_ADC_ALL ) { channel = COULO_ADC_0; }
         
         if( retval != 0 ) {
@@ -85,9 +85,12 @@ void loop() {
         }
 
         COMM.println("Results");
+        for( j = 0; j < 3; j++ ) {
         for( i = 0; i < 4; i++ ) {
-          COMM.print(coulo_adc_results[i]);
+          COMM.print(coulo_adc_results[4*j+i]);
           COMM.print(' ');
+        }
+        COMM.println();
         }
 
         COMM.println("");

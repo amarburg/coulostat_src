@@ -111,9 +111,15 @@ void __irq_spi1( void )
     if( (tx_count & 0x03) == 0 ) {
       while( (((0x01 << ++channel) & channel_mask) == 0) && (channel <= 3) ) { ; }
 
-      if( channel > 3 ) {
+      if( (channel > 3) && (rep >= oversample) ) {
         spi_irq_disable( MAX1303_SPI, SPI_TXE_INTERRUPT );
       } else {
+        if( channel > 3 ) {
+          channel = 0;
+          while( ((0x01 << channel) & channel_mask) == 0 ) { ++channel; }
+          ++rep;
+        }
+
         start_conversion( channel );
         ++tx_count;
       }
@@ -171,7 +177,7 @@ int8_t max1303_acq_external_clock_nonblocking( uint8_t chans, uint8_t oversample
   channel_mask = chans;
   channel = 0;
   max1303_data = data;
-  rep = 0;
+  rep = 1;
   oversample = oversample_in;
 
   if( oversample < 1 ) return 0;
