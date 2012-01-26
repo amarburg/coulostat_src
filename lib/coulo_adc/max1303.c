@@ -27,6 +27,8 @@ static uint8_t spi_xmit( uint8_t val )
 
   while( !spi_is_tx_empty( MAX1303_SPI )) { ; }
   while( spi_is_busy( MAX1303_SPI)) {;}
+
+  return retval;
 }
 
 void max1303_init( void )
@@ -40,7 +42,7 @@ void max1303_init( void )
   /*!!AMM investigate the 50MHz flag... */
   gpio_set_mode( MAX1303_CS_BASE, MAX1303_CS, GPIO_OUTPUT_PP );
   gpio_set_mode( MAX1303_SPI_BASE, MAX1303_SPI_SCK, GPIO_AF_OUTPUT_PP );
-  gpio_set_mode( MAX1303_SPI_BASE, MAX1303_SPI_MISO, GPIO_INPUT_PD );
+  gpio_set_mode( MAX1303_SPI_BASE, MAX1303_SPI_MISO, GPIO_INPUT_PU );
   gpio_set_mode( MAX1303_SPI_BASE, MAX1303_SPI_MOSI, GPIO_AF_OUTPUT_PP );
 
   timer_set_mode(TIMER3, 2, TIMER_DISABLED);
