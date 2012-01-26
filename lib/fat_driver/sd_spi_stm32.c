@@ -82,21 +82,21 @@
 #define SD_CP_PIN                6
 #define SD_CP_MODE               GPIO_INPUT_PU
 
-#define SPI_SD                   SPI2
+#define SD_SPI                   SPI2
 
 /* Chip select? */
-#define GPIO_CS                  GPIOB
-#define GPIO_Pin_CS              12
+#define SD_CS_BASE               GPIOB
+#define SD_CS                    12
 
 #define DMA_Channel_SPI_SD_RX    DMA1_Channel2
 #define DMA_Channel_SPI_SD_TX    DMA1_Channel3
 #define DMA_FLAG_SPI_SD_TC_RX    DMA1_FLAG_TC2
 #define DMA_FLAG_SPI_SD_TC_TX    DMA1_FLAG_TC3
 
-#define GPIO_SPI_SD              GPIOB
-#define GPIO_Pin_SPI_SD_SCK      13
-#define GPIO_Pin_SPI_SD_MISO     14
-#define GPIO_Pin_SPI_SD_MOSI     15
+#define SD_SPI_BASE              GPIOB
+#define SD_SPI_SCK               13
+#define SD_SPI_MISO              14
+#define SD_SPI_MOSI              15
 
 #define RCC_APBPeriphClockCmd_SPI_SD  RCC_APB2PeriphClockCmd
 #define RCC_APBPeriph_SPI_SD     RCC_APB2Periph_SPI2
@@ -130,8 +130,8 @@
 #define CMD58	(0x40+58)	/* READ_OCR */
 
 /* Card-Select Controls  (Platform dependent) */
-#define SELECT()       gpio_write_bit( GPIO_CS, GPIO_Pin_CS, 0 ) 
-#define DESELECT()     gpio_write_bit( GPIO_CS, GPIO_Pin_CS, 1 ) 
+#define SELECT()       gpio_write_bit( SD_CS_BASE, SD_CS, 0 ) 
+#define DESELECT()     gpio_write_bit( SD_CS_BASE, SD_CS, 1 ) 
 
 #if (_MAX_SS != 512) || (_FS_READONLY == 0) || (STM32_SD_DISK_IOCTRL_FORCE == 1)
 #define STM32_SD_DISK_IOCTRL   1
@@ -148,22 +148,32 @@
 static const DWORD socket_state_mask_cp = (1 << 0);
 static const DWORD socket_state_mask_wp = (1 << 1);
 
-static volatile
-DSTATUS Stat = STA_NOINIT;	/* Disk status */
+// Disk status
+static volatile DSTATUS Stat = STA_NOINIT;	
 
-static volatile
-DWORD Timer1, Timer2;	/* 100Hz decrement timers */
-
-static byte_t CardType;			/* Card type flags */
+// 100Hz decrement timers
+static volatile DWORD Timer1, Timer2;	
+//
+// Card type flags
+static byte_t CardType;			
 
 enum speed_setting { INTERFACE_SLOW, INTERFACE_FAST };
+
+
+static void spi_set_prescaler( spi_dev *dev, uint32_t spi_baud )
+{
+   uint32_t cr1 = dev->regs->CR1;
+   cr1 &= ~(SPI_CR1_BR);
+   cr1 |= spi_baud;
+   dev->regs->CR1 = cr1;
+}
 
 static void interface_speed( enum speed_setting speed )
 {
   if ( speed == INTERFACE_SLOW )  
-    spi_set_prescaler( SPI_SD, SPI_SLOW_PRESCALER );
+    spi_set_prescaler( SD_SPI, SPI_SLOW_PRESCALER );
   else
-    spi_set_prescaler( SPI_SD, SPI_FAST_PRESCALER );
+    spi_set_prescaler( SD_SPI, SPI_FAST_PRESCALER );
 }
 
 #if SOCKET_WP_CONNECTED
@@ -196,12 +206,10 @@ static inline DWORD socket_is_write_protected(void)
 
 #if SOCKET_CP_CONNECTED
 /* Socket's Card-Present Pin: high = socket empty, low = card inserted */
-
 static void socket_cp_init(void)
 {
   gpio_set_mode( SD_CP_GPIO, SD_CP_PIN, SD_CP_MODE );
 }
-
 // On this hardware, with a mild pull-up on CP, 1 = no card, 0 = card
 static inline DWORD socket_is_empty(void)
 {
@@ -229,15 +237,14 @@ static inline DWORD socket_is_empty(void)
 void card_power(uint8_t on)		/* switch FET for card-socket VCC */
 {
   gpio_set_mode( SD_PWR_GPIO, SD_PWR_PIN, SD_PWR_MODE );
-
-
 /*!!AMM GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; */
+
   if (on) {
     gpio_write_bit( SD_PWR_GPIO, SD_PWR_PIN, 0 );
   } else {
-    /*!AMM Chip select internal pull-down (to avoid parasite powering) 
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_CS;
-    GPIO_Init(GPIO_CS, &GPIO_InitStructure); */
+    // !!AMM Chip select internal pull-down (to avoid parasite powering) 
+    // GPIO_InitStructure.GPIO_Pin = GPIO_Pin_CS;
+    // GPIO_Init(GPIO_CS, &GPIO_InitStructure);
 
     gpio_write_bit( SD_PWR_GPIO, SD_PWR_PIN, 1 );
   }
@@ -290,29 +297,41 @@ static byte_t stm32_spi_rw( byte_t out )
   /*return SPI_I2S_ReceiveData(SPI_SD); */
   //return spi_rx( SPI_SD );
 
+  uint8 retval = 0;
+
   // Follows the procedure from the reference manual RM0008 pp 665
-  while( !spi_is_tx_empty( SPI_SD )) { ; }
-  spi_tx_reg( SPI_SD, out );
+  while( !spi_is_tx_empty( SD_SPI )) { ; }
+  spi_tx_reg( SD_SPI, out );
 
-  while( !spi_is_rx_nonempty( SPI_SD ) ) {;}
-  return spi_rx_reg( SPI_SD ) & 0x00FF;
+  while( !spi_is_rx_nonempty( SD_SPI ) ) {;}
+  retval = spi_rx_reg( SD_SPI ) & 0x00FF;
+
+  while( !spi_is_tx_empty( SD_SPI )) { ; }
+  while( spi_is_busy( SD_SPI)) {;}
+
+  return retval;
 }
-
-
 
 /*-----------------------------------------------------------------------*/
 /* Transmit a byte to MMC via SPI  (Platform dependent)                  */
 /*-----------------------------------------------------------------------*/
+// Just transmit, no receive
 
-#define xmit_spi(dat)  spi_tx_byte( SPI_SD, dat )
+static void xmit_spi( byte_t val )
+{
+  while( !spi_is_tx_empty( SD_SPI )) { ; }
+  spi_tx_reg( SD_SPI, val );
+}
 
 /*-----------------------------------------------------------------------*/
 /* Receive a byte from MMC via SPI  (Platform dependent)                 */
 /*-----------------------------------------------------------------------*/
+// Clock out an idle byte, receive a byte
 
-static byte_t rcvr_spi (void)
+static byte_t rcvr_spi(void)
 {
-  return stm32_spi_rw(0xff);
+  return stm32_spi_rw( 0xFF );
+  //return stm32_spi_rw(0xff);
   //return spi_rx( SPI_SD );
 }
 
@@ -329,7 +348,6 @@ static byte_t wait_ready (void)
 {
   byte_t res;
 
-
   Timer2 = 50;	/* Wait for ready in timeout of 500ms */
   rcvr_spi();
   do
@@ -338,8 +356,6 @@ static byte_t wait_ready (void)
 
   return res;
 }
-
-
 
 /*-----------------------------------------------------------------------*/
 /* Deselect the card and release SPI bus                                 */
@@ -368,7 +384,7 @@ static void stm32_dma_transfer(
   WORD rw_workbyte[] = { 0xffff };
 
   /* shared DMA configuration values */
-  DMA_InitStructure.DMA_PeripheralBaseAddr = (DWORD)(&(SPI_SD->DR));
+  DMA_InitStructure.DMA_PeripheralBaseAddr = (DWORD)(&(SD_SPI->DR));
   DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
   DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
   DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
@@ -452,67 +468,31 @@ static void power_on (void)
   GPIO_InitTypeDef GPIO_InitStructure; */
   volatile byte_t dummyread;
 
-  /* Enable GPIO clock for CS */
-/*  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIO_CS, ENABLE); */
-  /* Enable SPI clock, SPI1: APB2, SPI2: APB1 */
-/*  RCC_APBPeriphClockCmd_SPI_SD(RCC_APBPeriph_SPI_SD, ENABLE); */
+  // Clocks for the GPIO and SPI are set in gpio_init and spi_init
 
   card_power(1);
 
   //for (Timer1 = 25; Timer1; );	/* Wait for 250ms */
-  delay(250);
+  delay_us(250000);
 
   /* Configure I/O for Flash Chip select */
-  /*!!AMM investigate the 50MHz flag... */
-  gpio_set_mode( GPIO_CS, GPIO_Pin_CS, GPIO_OUTPUT_PP );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_SCK, GPIO_AF_OUTPUT_PP );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MOSI, GPIO_AF_OUTPUT_PP );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MISO, GPIO_OUTPUT_PP );
-
-  /*GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_CS;
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_Init(GPIO_CS, &GPIO_InitStructure); */
-
-  /* De-select the Card: Chip Select high */
+  /*!!AMM investigate the 50MHz flag... on all four GPIOs */
+  gpio_set_mode( SD_CS_BASE, SD_CS, GPIO_OUTPUT_PP );
   DESELECT();
 
-  /* Configure SPI pins: SCK and MOSI with default alternate function (not re-mapped) push-pull */
-  /* This is all handled in spi_init (call to spi_gpio_cfg ) */
-  /*GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_SPI_SD_SCK | GPIO_Pin_SPI_SD_MOSI;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF_PP;
-  GPIO_Init(GPIO_SPI_SD, &GPIO_InitStructure); */
-  /* Configure MISO as Input with internal pull-up */
-  /*GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_SPI_SD_MISO;
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU;
-  GPIO_Init(GPIO_SPI_SD, &GPIO_InitStructure); */
-
-  /* SPI configuration */
-  /*SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-  SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
-  SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
-  SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
-  SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
-  SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
-  SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_256; // 72000kHz/256=281kHz < 400kHz
-  SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
-  SPI_InitStructure.SPI_CRCPolynomial = 7; */
+  gpio_set_mode( SD_SPI_BASE, SD_SPI_SCK,  GPIO_AF_OUTPUT_PP );
+  gpio_set_mode( SD_SPI_BASE, SD_SPI_MOSI, GPIO_AF_OUTPUT_PP );
+  gpio_set_mode( SD_SPI_BASE, SD_SPI_MISO, GPIO_INPUT_PU );
 
   // This handles GPIO setup on SCK, MISO and MOSI
-  spi_init( SPI_SD );
-
-  // TODO this needs to be worked out...
-  spi_master_enable( SPI_SD, SPI_MODE_0, SPI_SLOW_PRESCALER, SPI_FRAME_MSB );
+  spi_init( SD_SPI );
+  spi_master_enable( SD_SPI, SPI_SLOW_PRESCALER, 
+                     SPI_MODE_0, 
+                     SPI_FRAME_MSB | SPI_DFF_8_BIT );
   
-  /*SPI_Init(SPI_SD, &SPI_InitStructure); */
-  /*SPI_CalculateCRC(SPI_SD, DISABLE); */
-  /*SPI_Cmd(SPI_SD, ENABLE); */
-
-  /* drain SPI */
-  /*while (SPI_I2S_GetFlagStatus(SPI_SD, SPI_I2S_FLAG_TXE) == RESET) { ; }
-  dummyread = SPI_I2S_ReceiveData(SPI_SD); */
-  dummyread = spi_rx( SPI_SD );
+  // Ensure the SPI interface is cleared out...
+  while( !spi_is_tx_empty( SD_SPI )) { ; }
+  spi_rx_reg( SD_SPI );
 
 #ifdef STM32_SD_USE_DMA
   /* enable DMA clock */
@@ -522,8 +502,6 @@ static void power_on (void)
 
 static void power_off (void)
 {
-  /*GPIO_InitTypeDef GPIO_InitStructure; */
-
   if (!(Stat & STA_NOINIT)) {
     SELECT();
     wait_ready();
@@ -533,17 +511,17 @@ static void power_off (void)
   /*SPI_I2S_DeInit(SPI_SD);
   SPI_Cmd(SPI_SD, DISABLE);
   RCC_APBPeriphClockCmd_SPI_SD(RCC_APBPeriph_SPI_SD, DISABLE); */
-  spi_disable( SPI_SD );
+  spi_peripheral_disable( SD_SPI );
 
   /* All SPI-Pins to input with weak internal pull-downs */
   /*GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_SPI_SD_SCK | GPIO_Pin_SPI_SD_MISO | GPIO_Pin_SPI_SD_MOSI;
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPD;
   GPIO_Init(GPIO_SPI_SD, &GPIO_InitStructure); */
 
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_SCK, GPIO_INPUT_PD );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MOSI, GPIO_INPUT_PD );
-  gpio_set_mode( GPIO_SPI_SD, GPIO_Pin_SPI_SD_MISO, GPIO_INPUT_PD );
-  gpio_set_mode( GPIO_CS, GPIO_Pin_CS, GPIO_INPUT_PD );
+  gpio_set_mode( SD_SPI_BASE, SD_SPI_SCK,  GPIO_INPUT_PD );
+  gpio_set_mode( SD_SPI_BASE, SD_SPI_MOSI, GPIO_INPUT_PD );
+  gpio_set_mode( SD_SPI_BASE, SD_SPI_MISO, GPIO_INPUT_PD );
+  gpio_set_mode( SD_CS_BASE,  SD_CS,       GPIO_INPUT_PD );
 
   card_power(0);
 
