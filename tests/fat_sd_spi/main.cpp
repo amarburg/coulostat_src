@@ -75,7 +75,6 @@ void setup() {
     COMM.println("------------------------------------------------------------");
     COMM.print("> ");
 
-
     disk_subsystem_init();
 }
 
@@ -141,9 +140,11 @@ void loop() {
             SerialUSB.println("Hello World!");
             break;
           case 'p':
+            SerialUSB.println("Turning card power on!");
             card_power( 1 );
             break;
           case 'P':
+            SerialUSB.println("Turning card power off!");
             card_power( 0 );
             break;
           case 'f':

@@ -84,20 +84,25 @@
 #define SD_CP_MODE               GPIO_INPUT_PU
 
 #define SD_SPI                   SPI2
-
-/* Chip select? */
-#define SD_CS_GPIO               GPIOB
-#define SD_CS                    12
+//#define SD_SPI                   SPI1
 
 #define DMA_Channel_SPI_SD_RX    DMA1_Channel2
 #define DMA_Channel_SPI_SD_TX    DMA1_Channel3
 #define DMA_FLAG_SPI_SD_TC_RX    DMA1_FLAG_TC2
 #define DMA_FLAG_SPI_SD_TC_TX    DMA1_FLAG_TC3
 
+/* Chip select? */
+#define SD_CS_GPIO               GPIOB
+#define SD_CS                    12
+
 #define SD_SPI_BASE              GPIOB
 #define SD_SPI_SCK               13
 #define SD_SPI_MISO              14
-#define SD_SPI_MOSI              15
+#define SD_SPI_MOSI              15 
+/*#define SD_SPI_BASE              GPIOA
+#define SD_SPI_SCK              5 
+#define SD_SPI_MISO             6 
+#define SD_SPI_MOSI            7  */
 
 #define RCC_APBPeriphClockCmd_SPI_SD  RCC_APB2PeriphClockCmd
 #define RCC_APBPeriph_SPI_SD     RCC_APB2Periph_SPI2
@@ -254,9 +259,11 @@ void card_power(uint8_t on)		/* switch FET for card-socket VCC */
 static int chk_power(void)		/* Socket power state: 0=off, 1=on */
 {
   if ( gpio_read_bit( SD_PWR_GPIO, SD_PWR_PIN ) == 1 ) {
-    return 0;
-  } else {
+        debug_println("Power is off");
     return 1;
+  } else {
+        debug_println("Power is off");
+    return 0;
   }
 }
 #endif
@@ -478,16 +485,24 @@ static void power_on (void)
   // This handles GPIO setup on SCK, MISO and MOSI
   spi_init( SD_SPI );
   spi_master_enable( SD_SPI, SPI_SLOW_PRESCALER, 
-                     SPI_MODE_0, SPI_FRAME_MSB | SPI_DFF_8_BIT );
+                     SPI_MODE_0, SPI_FRAME_MSB | SPI_DFF_8_BIT | SPI_SW_SLAVE );
   
+  debug_led(1);
+  debug_println("Master en");
+  delay_us(100);
+
   // Ensure the SPI interface is cleared out...
-  spi_tx_reg( SD_SPI, 0x00 );
-  while( !spi_is_tx_empty( SD_SPI )) { ; }
+  /*spi_tx_reg( SD_SPI, 0x00 );
+  while( !spi_is_tx_empty( SD_SPI )) { ; } */
 
-  spi_tx_reg( SD_SPI, 0x00 );
-  while( !spi_is_tx_empty( SD_SPI )) { ; }
+  debug_println("TX clear");
+  delay_us(100);
 
-  spi_rx_reg( SD_SPI ); 
+  //spi_rx_reg( SD_SPI ); 
+  rcvr_spi();
+
+  debug_println("RX clear");
+  delay_us(100);
 
 #ifdef STM32_SD_USE_DMA
   /* enable DMA clock */
@@ -684,7 +699,7 @@ DSTATUS disk_initialize (
   if (drv) return STA_NOINIT;			/* Supports only single drive */
   if (Stat & STA_NODISK) return Stat;	/* No card in the socket */
 
-  debug_led(0);
+  debug_led(1);
   power_on();							/* Force socket power on and initialize interface */
 
   interface_speed(INTERFACE_SLOW);
@@ -866,12 +881,14 @@ DRESULT disk_ioctl (
         if (chk_power()) {
           debug_println("Power is on, so we'll turn it off");
           power_off();		/* Power off */
+          debug_println("Success!");
         }
         res = RES_OK;
         break;
       case 1:		/* Sub control code == 1 (POWER_ON) */
         debug_println("Power is off, we'll turn it on");
         power_on();				/* Power on */
+          debug_println("Success!");
         res = RES_OK;
         break;
       case 2:		/* Sub control code == 2 (POWER_GET) */
