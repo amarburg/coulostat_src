@@ -3,8 +3,7 @@
 
 // choose your weapon
 #define COMM SerialUSB
-
-#define LED_PIN 13
+#define DEBUG Serial1
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,6 +17,10 @@ void return_to_main_menu( void );
 void comm_println( const char *c );
 char comm_get( void );
 void xputc( char c );
+
+void debug_println( const char *c );
+
+void debug_led( unsigned int i );
 
 #ifdef __cplusplus
 }

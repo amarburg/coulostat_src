@@ -2,10 +2,9 @@ PROJECT_OBJS = $(BUILD_PATH)/fat_test_term.o \
 	       $(BUILD_PATH)/term_io.o \
 	       $(BUILD_PATH)/lib/fat_fs/ff.o \
 	       $(BUILD_PATH)/lib/fat_fs/fattime.o \
-	       $(BUILD_PATH)/lib/fat_driver/sd_spi_stm32.o \
-	       $(BUILD_PATH)/my_systick.o 
+	       $(BUILD_PATH)/lib/fat_driver/sd_spi_stm32.o 
 
-CFLAGS += -I. -I$(TOP_LEVEL)/lib -DBOARD_maple
+CFLAGS += -I. -I$(TOP_LEVEL)/lib -DBOARD_maple -DDISABLE_SERIAL3
 
 # I believe this overrides a maple-provided rule
 # 
