@@ -12,7 +12,7 @@
 #include "hw_config.h"
 
 #include "fat_test_term.h"
-#include "sd_spi_stm32.h"
+#include "fat_driver/sd_spi_stm32.h"
 
 extern "C" void systick_attach_callback(void (*callback)(void));
 
