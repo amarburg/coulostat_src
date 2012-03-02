@@ -9,8 +9,32 @@
 #include "stdint.h"
 #include "main.h"
 
+#include "hw_config.h"
+
 #include "fat_test_term.h"
 #include "sd_spi_stm32.h"
+
+extern "C" void systick_attach_callback(void (*callback)(void));
+
+void my_systick( void )
+{
+  static uint16_t count = 0;
+  static int toggle = 0;
+
+  if( (count % 10) == 0 ) {
+    disk_timerproc();
+  }
+
+  if( (count % 100) == 0 ) {
+    toggle ^= 1;
+  //  digitalWrite(LED_PIN, toggle);
+  }
+
+  count++;
+  if( count >= 1000 ) count = 0;
+
+  fat_test_term_timerproc(); /* to be called every ms */
+}
 
 
 uint8 input=0;
@@ -27,11 +51,14 @@ void return_to_main_menu( void ) { app_state = DO_MAIN_MENU; }
 void setup() {
     /* Set up the LED to blink  */
     pinMode(LED_PIN, OUTPUT);
+    debug_led(0);
 
     /* Start up the serial ports */
     Serial1.begin(115200);
     Serial1.println("Test test");
-    Serial3.begin(9600);
+    /*Serial3.begin(9600); */
+    
+    systick_attach_callback( my_systick );
 
     /* Send a message out over COMM interface */
     COMM.println(" ");
@@ -81,6 +108,16 @@ void xputc( char c )
 }
 
 
+void debug_println( const char *c )
+{
+  DEBUG.println(c);
+}
+
+
+void debug_led( unsigned int i )
+{
+  digitalWrite(LED_PIN, i );
+}
 
 void loop() {
 
