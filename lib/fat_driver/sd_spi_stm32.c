@@ -42,6 +42,7 @@
 #include "libmaple.h"
 #include "gpio.h"
 #include "spi.h"
+#include "timer.h"
 #include "fat_fs/ffconf.h"
 #include "fat_fs/diskio.h"
 #include "main.h"
@@ -85,7 +86,7 @@
 #define SD_SPI                   SPI2
 
 /* Chip select? */
-#define SD_CS_BASE               GPIOB
+#define SD_CS_GPIO               GPIOB
 #define SD_CS                    12
 
 #define DMA_Channel_SPI_SD_RX    DMA1_Channel2
@@ -102,7 +103,7 @@
 #define RCC_APBPeriph_SPI_SD     RCC_APB2Periph_SPI2
 
 /* - for SPI1 and full-speed APB2: 72MHz/4 */
-#define SPI_FAST_PRESCALER  SPI_BAUD_PCLK_DIV_4
+#define SPI_FAST_PRESCALER  SPI_BAUD_PCLK_DIV_256
 #define SPI_SLOW_PRESCALER  SPI_BAUD_PCLK_DIV_256
 
 #else
@@ -130,8 +131,8 @@
 #define CMD58	(0x40+58)	/* READ_OCR */
 
 /* Card-Select Controls  (Platform dependent) */
-#define SELECT()       gpio_write_bit( SD_CS_BASE, SD_CS, 0 ) 
-#define DESELECT()     gpio_write_bit( SD_CS_BASE, SD_CS, 1 ) 
+#define SELECT()       gpio_write_bit( SD_CS_GPIO, SD_CS, 0 ) 
+#define DESELECT()     gpio_write_bit( SD_CS_GPIO, SD_CS, 1 ) 
 
 #if (_MAX_SS != 512) || (_FS_READONLY == 0) || (STM32_SD_DISK_IOCTRL_FORCE == 1)
 #define STM32_SD_DISK_IOCTRL   1
@@ -158,7 +159,6 @@ static volatile DWORD Timer1, Timer2;
 static byte_t CardType;			
 
 enum speed_setting { INTERFACE_SLOW, INTERFACE_FAST };
-
 
 static void spi_set_prescaler( spi_dev *dev, uint32_t spi_baud )
 {
@@ -283,31 +283,17 @@ static int chk_power(void)
 /*-----------------------------------------------------------------------*/
 static byte_t stm32_spi_rw( byte_t out )
 {
-  /* Loop while DR register in not empty */
-  /// not needed: while (SPI_I2S_GetFlagStatus(SPI_SD, SPI_I2S_FLAG_TXE) == RESET) { ; }
-
-  /* Send byte through the SPI peripheral */
-  /*SPI_I2S_SendData(SPI_SD, out); */
-  //return spi_tx_byte( SPI_SD, out );
-
-  /* Wait to receive a byte */
-  /*while (SPI_I2S_GetFlagStatus(SPI_SD, SPI_I2S_FLAG_RXNE) == RESET) { ; } */
-
-  /* Return the byte read from the SPI bus */
-  /*return SPI_I2S_ReceiveData(SPI_SD); */
-  //return spi_rx( SPI_SD );
-
   uint8 retval = 0;
 
   // Follows the procedure from the reference manual RM0008 pp 665
-  while( !spi_is_tx_empty( SD_SPI )) { ; }
+  while( !spi_is_tx_empty( SD_SPI )) { ; } 
   spi_tx_reg( SD_SPI, out );
 
   while( !spi_is_rx_nonempty( SD_SPI ) ) {;}
   retval = spi_rx_reg( SD_SPI ) & 0x00FF;
 
-  while( !spi_is_tx_empty( SD_SPI )) { ; }
-  while( spi_is_busy( SD_SPI)) {;}
+/*  while( !spi_is_tx_empty( SD_SPI )) { ; }
+  while( spi_is_busy( SD_SPI)) {;} */
 
   return retval;
 }
@@ -319,7 +305,7 @@ static byte_t stm32_spi_rw( byte_t out )
 
 static void xmit_spi( byte_t val )
 {
-  while( !spi_is_tx_empty( SD_SPI )) { ; }
+  while( !spi_is_tx_empty( SD_SPI )) { ; } 
   spi_tx_reg( SD_SPI, val );
 }
 
@@ -349,10 +335,12 @@ static byte_t wait_ready (void)
   byte_t res;
 
   Timer2 = 50;	/* Wait for ready in timeout of 500ms */
+
   rcvr_spi();
-  do
+
+  do {
     res = rcvr_spi();
-  while ((res != 0xFF) && Timer2);
+  } while ((res != 0xFF) && Timer2);
 
   return res;
 }
@@ -469,39 +457,54 @@ static void power_on (void)
   volatile byte_t dummyread;
 
   // Clocks for the GPIO and SPI are set in gpio_init and spi_init
-
-  card_power(1);
-
-  //for (Timer1 = 25; Timer1; );	/* Wait for 250ms */
-  delay_us(250000);
+  spi_peripheral_disable( SD_SPI );
 
   /* Configure I/O for Flash Chip select */
   /*!!AMM investigate the 50MHz flag... on all four GPIOs */
-  gpio_set_mode( SD_CS_BASE, SD_CS, GPIO_OUTPUT_PP );
+  gpio_set_mode( SD_CS_GPIO, SD_CS, GPIO_OUTPUT_PP );
   DESELECT();
 
   gpio_set_mode( SD_SPI_BASE, SD_SPI_SCK,  GPIO_AF_OUTPUT_PP );
   gpio_set_mode( SD_SPI_BASE, SD_SPI_MOSI, GPIO_AF_OUTPUT_PP );
   gpio_set_mode( SD_SPI_BASE, SD_SPI_MISO, GPIO_INPUT_PU );
 
+  timer_set_mode( TIMER1, 1, TIMER_DISABLED );
+  timer_set_mode( TIMER1, 2, TIMER_DISABLED );
+  timer_set_mode( TIMER1, 3, TIMER_DISABLED );
+
+  //usart_disable( USART3 );
+  //i2c_disable( I2C2 );
+
   // This handles GPIO setup on SCK, MISO and MOSI
   spi_init( SD_SPI );
   spi_master_enable( SD_SPI, SPI_SLOW_PRESCALER, 
-                     SPI_MODE_0, 
-                     SPI_FRAME_MSB | SPI_DFF_8_BIT );
+                     SPI_MODE_0, SPI_FRAME_MSB | SPI_DFF_8_BIT );
   
   // Ensure the SPI interface is cleared out...
+  spi_tx_reg( SD_SPI, 0x00 );
   while( !spi_is_tx_empty( SD_SPI )) { ; }
-  spi_rx_reg( SD_SPI );
+
+  spi_tx_reg( SD_SPI, 0x00 );
+  while( !spi_is_tx_empty( SD_SPI )) { ; }
+
+  spi_rx_reg( SD_SPI ); 
 
 #ifdef STM32_SD_USE_DMA
   /* enable DMA clock */
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 #endif
-}
 
+  DESELECT();
+  card_power(1);
+
+  for (Timer1 = 25; Timer1; );	/* Wait for 250ms */
+
+  debug_led(0);
+
+}
 static void power_off (void)
 {
+
   if (!(Stat & STA_NOINIT)) {
     SELECT();
     wait_ready();
@@ -521,7 +524,7 @@ static void power_off (void)
   gpio_set_mode( SD_SPI_BASE, SD_SPI_SCK,  GPIO_INPUT_PD );
   gpio_set_mode( SD_SPI_BASE, SD_SPI_MOSI, GPIO_INPUT_PD );
   gpio_set_mode( SD_SPI_BASE, SD_SPI_MISO, GPIO_INPUT_PD );
-  gpio_set_mode( SD_CS_BASE,  SD_CS,       GPIO_INPUT_PD );
+  //gpio_set_mode( SD_CS_GPIO,  SD_CS,       GPIO_INPUT_PD );
 
   card_power(0);
 
@@ -630,10 +633,12 @@ byte_t send_cmd (
 
   /* Select the card and wait for ready */
   DESELECT();
-  SELECT();
-  if (wait_ready() != 0xFF) {
-    return 0xFF;
-  }
+//  SELECT();
+
+//  if (wait_ready() != 0xFF) {
+//    DESELECT();
+//    return 0xFF;
+//  } 
 
   /* Send command packet */
   xmit_spi(cmd);						/* Start + Command index */
@@ -679,6 +684,7 @@ DSTATUS disk_initialize (
   if (drv) return STA_NOINIT;			/* Supports only single drive */
   if (Stat & STA_NODISK) return Stat;	/* No card in the socket */
 
+  debug_led(0);
   power_on();							/* Force socket power on and initialize interface */
 
   interface_speed(INTERFACE_SLOW);
@@ -721,7 +727,7 @@ DSTATUS disk_initialize (
       if (!Timer1 || send_cmd(CMD16, 512) != 0)	/* Set R/W block length to 512 */
         ty = 0;
     }
-  }
+  } 
   CardType = ty;
   release_spi();
 
@@ -858,12 +864,13 @@ DRESULT disk_ioctl (
     switch (*ptr) {
       case 0:		/* Sub control code == 0 (POWER_OFF) */
         if (chk_power()) {
-          xprintf("Power is on, so we'll turn it off");
+          debug_println("Power is on, so we'll turn it off");
           power_off();		/* Power off */
         }
         res = RES_OK;
         break;
       case 1:		/* Sub control code == 1 (POWER_ON) */
+        debug_println("Power is off, we'll turn it on");
         power_on();				/* Power on */
         res = RES_OK;
         break;
