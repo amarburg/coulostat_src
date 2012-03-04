@@ -77,6 +77,7 @@
 
 /* Card present? */
 #define SOCKET_CP_CONNECTED      1
+
 /* I'll connect it to Maple pin 35 == PC6 and 
  * use the internal pull-up */
 #define SD_CP_GPIO               GPIOC
@@ -84,7 +85,6 @@
 #define SD_CP_MODE               GPIO_INPUT_PU
 
 #define SD_SPI                   SPI2
-//#define SD_SPI                   SPI1
 
 #define DMA_Channel_SPI_SD_RX    DMA1_Channel2
 #define DMA_Channel_SPI_SD_TX    DMA1_Channel3
@@ -93,22 +93,18 @@
 
 /* Chip select? */
 #define SD_CS_GPIO               GPIOB
-#define SD_CS                    12
+#define SD_CS                    0
 
 #define SD_SPI_BASE              GPIOB
 #define SD_SPI_SCK               13
 #define SD_SPI_MISO              14
 #define SD_SPI_MOSI              15 
-/*#define SD_SPI_BASE              GPIOA
-#define SD_SPI_SCK              5 
-#define SD_SPI_MISO             6 
-#define SD_SPI_MOSI            7  */
 
 #define RCC_APBPeriphClockCmd_SPI_SD  RCC_APB2PeriphClockCmd
 #define RCC_APBPeriph_SPI_SD     RCC_APB2Periph_SPI2
 
 /* - for SPI1 and full-speed APB2: 72MHz/4 */
-#define SPI_FAST_PRESCALER  SPI_BAUD_PCLK_DIV_256
+#define SPI_FAST_PRESCALER  SPI_BAUD_PCLK_DIV_32
 #define SPI_SLOW_PRESCALER  SPI_BAUD_PCLK_DIV_256
 
 #else
@@ -138,6 +134,7 @@
 /* Card-Select Controls  (Platform dependent) */
 #define SELECT()       gpio_write_bit( SD_CS_GPIO, SD_CS, 0 ) 
 #define DESELECT()     gpio_write_bit( SD_CS_GPIO, SD_CS, 1 ) 
+
 
 #if (_MAX_SS != 512) || (_FS_READONLY == 0) || (STM32_SD_DISK_IOCTRL_FORCE == 1)
 #define STM32_SD_DISK_IOCTRL   1
@@ -259,10 +256,10 @@ void card_power(uint8_t on)		/* switch FET for card-socket VCC */
 int chk_power(void)		/* Socket power state: 0=off, 1=on */
 {
   if ( gpio_read_bit( SD_PWR_GPIO, SD_PWR_PIN ) == 1 ) {
-        debug_println("Power is off");
+    debug_println("Power is on");
     return 1;
   } else {
-        debug_println("Power is off");
+    debug_println("Power is off");
     return 0;
   }
 }
@@ -878,16 +875,13 @@ DRESULT disk_ioctl (
     switch (*ptr) {
       case 0:		/* Sub control code == 0 (POWER_OFF) */
         if (chk_power()) {
-          debug_println("Power is on, so we'll turn it off");
           power_off();		/* Power off */
-          debug_println("Success!");
         }
         res = RES_OK;
         break;
       case 1:		/* Sub control code == 1 (POWER_ON) */
         debug_println("Power is off, we'll turn it on");
         power_on();				/* Power on */
-          debug_println("Success!");
         res = RES_OK;
         break;
       case 2:		/* Sub control code == 2 (POWER_GET) */
