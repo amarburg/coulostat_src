@@ -119,44 +119,49 @@ void debug_led( unsigned int i )
 }
 
 void loop() {
+  DSTATUS dstatus;
 
-    delay(100);
+  delay(100);
 
-    while(COMM.available()) {
-        input = COMM.read();
+  while(COMM.available()) {
+    input = COMM.read();
+    COMM.println(input);
+    switch(input) {
+      case 13:  // Carriage Return
+        COMM.println("what?");
+        break;
+      case 32:  // ' '
+        COMM.println("spacebar, nice!");
+        break;
+      case 63:  // '?'
+      case 104: // 'h'
+        print_help();
+        break;
+      case 117: // 'u'
+        SerialUSB.println("Hello World!");
+        break;
+      case 'p':
+        SerialUSB.println("Turning card power on!");
+        card_power( 1 );
+        break;
+      case 'P':
+        SerialUSB.println("Turning card power off!");
+        card_power( 0 );
+        break;
+      case 'd':
+        dstatus = disk_initialize(0);
+        put_dstatus( dstatus );
+        break;
+      case 'f':
+        COMM.println("Entering FAT test terminal");
+        app_state = DO_FAT_MENU;
+        break;
+      default:
+        COMM.print("Unexpected: ");
         COMM.println(input);
-        switch(input) {
-          case 13:  // Carriage Return
-            COMM.println("what?");
-            break;
-          case 32:  // ' '
-            COMM.println("spacebar, nice!");
-            break;
-          case 63:  // '?'
-          case 104: // 'h'
-            print_help();
-            break;
-          case 117: // 'u'
-            SerialUSB.println("Hello World!");
-            break;
-          case 'p':
-            SerialUSB.println("Turning card power on!");
-            card_power( 1 );
-            break;
-          case 'P':
-            SerialUSB.println("Turning card power off!");
-            card_power( 0 );
-            break;
-          case 'f':
-            COMM.println("Entering FAT test terminal");
-            app_state = DO_FAT_MENU;
-            break;
-          default:
-            COMM.print("Unexpected: ");
-            COMM.println(input);
-        }
-        COMM.print("> ");
     }
+    COMM.print("> ");
+  }
 }
 
 void print_help(void) {

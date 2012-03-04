@@ -256,7 +256,7 @@ void card_power(uint8_t on)		/* switch FET for card-socket VCC */
 }
 
 #if (STM32_SD_DISK_IOCTRL == 1)
-static int chk_power(void)		/* Socket power state: 0=off, 1=on */
+int chk_power(void)		/* Socket power state: 0=off, 1=on */
 {
   if ( gpio_read_bit( SD_PWR_GPIO, SD_PWR_PIN ) == 1 ) {
         debug_println("Power is off");
@@ -284,6 +284,9 @@ static int chk_power(void)
 
 #endif /* CARD_SUPPLY_SWITCHABLE */
 
+static inline uint8 spi_mode_fault( spi_dev *dev ) {
+  return dev->regs->SR & SPI_SR_MODF;
+}
 
 /*-----------------------------------------------------------------------*/
 /* Transmit/Receive a byte to MMC via SPI  (Platform dependent)          */
@@ -293,11 +296,17 @@ static byte_t stm32_spi_rw( byte_t out )
   uint8 retval = 0;
 
   // Follows the procedure from the reference manual RM0008 pp 665
-  while( !spi_is_tx_empty( SD_SPI )) { ; } 
+  while( !spi_is_tx_empty( SD_SPI )) {  ; }
   spi_tx_reg( SD_SPI, out );
 
-  while( !spi_is_rx_nonempty( SD_SPI ) ) {;}
-  retval = spi_rx_reg( SD_SPI ) & 0x00FF;
+  while( !spi_is_rx_nonempty( SD_SPI ) && !spi_mode_fault( SD_SPI ) ) { ; }
+
+  if( spi_mode_fault( SD_SPI ) ){
+    debug_println("MODF");
+    return;
+  }
+
+  retval = spi_rx_reg( SD_SPI );
 
 /*  while( !spi_is_tx_empty( SD_SPI )) { ; }
   while( spi_is_busy( SD_SPI)) {;} */
@@ -310,11 +319,12 @@ static byte_t stm32_spi_rw( byte_t out )
 /*-----------------------------------------------------------------------*/
 // Just transmit, no receive
 
-static void xmit_spi( byte_t val )
-{
-  while( !spi_is_tx_empty( SD_SPI )) { ; } 
-  spi_tx_reg( SD_SPI, val );
-}
+#define xmit_spi(dat)  stm32_spi_rw(dat)
+//static void xmit_spi( byte_t val )
+//{
+//  while( !spi_is_tx_empty( SD_SPI )) { ; } 
+//  spi_tx_reg( SD_SPI, val );
+//}
 
 /*-----------------------------------------------------------------------*/
 /* Receive a byte from MMC via SPI  (Platform dependent)                 */
@@ -466,11 +476,16 @@ static void power_on (void)
   // Clocks for the GPIO and SPI are set in gpio_init and spi_init
   spi_peripheral_disable( SD_SPI );
 
+  card_power(1);
+  for (Timer1 = 25; Timer1; );	/* Wait for 250ms */
+
   /* Configure I/O for Flash Chip select */
   /*!!AMM investigate the 50MHz flag... on all four GPIOs */
+  gpio_init( SD_CS_GPIO );
   gpio_set_mode( SD_CS_GPIO, SD_CS, GPIO_OUTPUT_PP );
   DESELECT();
 
+  gpio_init( SD_SPI_BASE );
   gpio_set_mode( SD_SPI_BASE, SD_SPI_SCK,  GPIO_AF_OUTPUT_PP );
   gpio_set_mode( SD_SPI_BASE, SD_SPI_MOSI, GPIO_AF_OUTPUT_PP );
   gpio_set_mode( SD_SPI_BASE, SD_SPI_MISO, GPIO_INPUT_PU );
@@ -482,39 +497,23 @@ static void power_on (void)
   //usart_disable( USART3 );
   //i2c_disable( I2C2 );
 
+  spi_irq_disable( SD_SPI, SPI_INTERRUPTS_ALL );
   // This handles GPIO setup on SCK, MISO and MOSI
   spi_init( SD_SPI );
   spi_master_enable( SD_SPI, SPI_SLOW_PRESCALER, 
-                     SPI_MODE_0, SPI_FRAME_MSB | SPI_DFF_8_BIT | SPI_SW_SLAVE );
+                     SPI_MODE_0, SPI_FRAME_MSB | SPI_DFF_8_BIT | SPI_SW_SLAVE | SPI_SOFT_SS );
   
-  debug_led(1);
-  debug_println("Master en");
-  delay_us(100);
-
   // Ensure the SPI interface is cleared out...
   /*spi_tx_reg( SD_SPI, 0x00 );
   while( !spi_is_tx_empty( SD_SPI )) { ; } */
 
-  debug_println("TX clear");
-  delay_us(100);
-
   //spi_rx_reg( SD_SPI ); 
   rcvr_spi();
-
-  debug_println("RX clear");
-  delay_us(100);
 
 #ifdef STM32_SD_USE_DMA
   /* enable DMA clock */
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 #endif
-
-  DESELECT();
-  card_power(1);
-
-  for (Timer1 = 25; Timer1; );	/* Wait for 250ms */
-
-  debug_led(0);
 
 }
 static void power_off (void)
@@ -648,12 +647,12 @@ byte_t send_cmd (
 
   /* Select the card and wait for ready */
   DESELECT();
-//  SELECT();
+  SELECT();
 
-//  if (wait_ready() != 0xFF) {
-//    DESELECT();
-//    return 0xFF;
-//  } 
+  if (wait_ready() != 0xFF) {
+    DESELECT();
+    return 0xFF;
+  } 
 
   /* Send command packet */
   xmit_spi(cmd);						/* Start + Command index */
@@ -699,8 +698,7 @@ DSTATUS disk_initialize (
   if (drv) return STA_NOINIT;			/* Supports only single drive */
   if (Stat & STA_NODISK) return Stat;	/* No card in the socket */
 
-  debug_led(1);
-  power_on();							/* Force socket power on and initialize interface */
+  if(!chk_power()) power_on();							/* Force socket power on and initialize interface */
 
   interface_speed(INTERFACE_SLOW);
   for (n = 10; n; n--) rcvr_spi();	/* 80 dummy clocks */
@@ -732,6 +730,7 @@ DSTATUS disk_initialize (
         }
       }
     } else {							/* SDSC or MMC */
+
       // Older cards don't understand CMD8
       if (send_cmd(ACMD41, 0) <= 1) 	{
         ty = CT_SD1; cmd = ACMD41;	/* SDSC */

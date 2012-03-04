@@ -97,7 +97,7 @@ static void put_dresult( DRESULT rc )
   xprintf("rc=%u, RF_%s"ENDL, rc, str[(int)rc] );
 }
 
-static void put_dstatus( DSTATUS rc )
+void put_dstatus( DSTATUS rc )
 {
   xprintf("rc=%u: ", rc );
   if( rc & STA_NOINIT ) xprintf("NOINIT ");

@@ -13,6 +13,10 @@ void disk_subsystem_init( void );
 
 void disk_timerproc (void) __attribute__ ((long_call, section (".ramsection")));
 void card_power(uint8_t on);
+int chk_power(void);
+
+DSTATUS disk_initialize ( byte_t dr );
+
 
 #ifdef __cplusplus
 }
