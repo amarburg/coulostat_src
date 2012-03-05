@@ -104,7 +104,7 @@
 #define RCC_APBPeriph_SPI_SD     RCC_APB2Periph_SPI2
 
 /* - for SPI1 and full-speed APB2: 72MHz/4 */
-#define SPI_FAST_PRESCALER  SPI_BAUD_PCLK_DIV_32
+#define SPI_FAST_PRESCALER  SPI_BAUD_PCLK_DIV_2
 #define SPI_SLOW_PRESCALER  SPI_BAUD_PCLK_DIV_256
 
 #else
